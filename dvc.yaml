@@ -1,0 +1,29 @@
+stages:
+  preprocess:
+    cmd: python musicnet/preprocess.py
+    deps:
+    - data/MusicNet/musicnet/musicnet
+    params:
+    - shared
+    - preprocess
+    outs:
+    - data/train
+    - data/val
+  train:
+    cmd: python musicnet/train.py
+    deps:
+    - data/train
+    - data/val
+    params:
+    - shared
+    - train
+    outs:
+    - musicnet/model.keras
+    - musicnet/model.weights.h5
+    - dvclive/metrics.json
+    - dvclive/plots
+metrics:
+- dvclive/metrics.json
+plots:
+- dvclive/plots/metrics:
+    x: step

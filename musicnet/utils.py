@@ -5,9 +5,19 @@ import mido
 import numpy as np
 import librosa
 import math
+from pathlib import Path
+import yaml
 
-DATASET_BASE_PATH = "/home/leszek/datasets/MusicNet"
-FILES_BASE_PATH = DATASET_BASE_PATH + "/musicnet/musicnet"
+DATASET_BASE_PATH = str(Path(__file__).parent.with_name("data").joinpath("MusicNet"))
+DATASET_XY_PATH = os.path.join(DATASET_BASE_PATH, "musicnet", "musicnet")
+
+def load_params(namespaces):
+    params = yaml.safe_load(open(Path(__file__).parent.with_name("params.yaml")))
+    filtered = {}
+    for n in namespaces:
+        filtered = { **filtered, **params[n] }
+    return filtered
+
 
 def create_vocab(value_set):
     values = list(value_set)
@@ -17,7 +27,7 @@ def create_vocab(value_set):
 def load_instruments_and_notes():
     instruments = set()
     notes = set()
-    for file in glob(os.path.join(FILES_BASE_PATH, "train_labels/*.csv")):
+    for file in glob(os.path.join(DATASET_XY_PATH, "train_labels", "*.csv")):
         data = pd.read_csv(file)
         for i in data["instrument"].unique():
             instruments.add(i)
@@ -32,19 +42,19 @@ instruments_vocab, notes_vocab = load_instruments_and_notes()
 class Track:
     def __init__(self, _id):
         self._id = _id
-        if os.path.exists(os.path.join(FILES_BASE_PATH, "train_data", f"{self._id}.wav")):
+        if os.path.exists(os.path.join(DATASET_XY_PATH, "train_data", f"{self._id}.wav")):
             self.ds = "train"
-        elif os.path.exists((os.path.join(FILES_BASE_PATH, "test_data", f"{self._id}.wav"))):
+        elif os.path.exists((os.path.join(DATASET_XY_PATH, "test_data", f"{self._id}.wav"))):
             self.ds = "test"
         else:
             raise Exception(f"Track {_id} not found!")
         self.metadata = metadata.loc[_id]
     
     def get_wav_path(self):
-        return os.path.join(FILES_BASE_PATH, f"{self.ds}_data", f"{self._id}.wav")
+        return os.path.join(DATASET_XY_PATH, f"{self.ds}_data", f"{self._id}.wav")
     
     def get_csv_path(self):
-        return os.path.join(FILES_BASE_PATH, f"{self.ds}_labels", f"{self._id}.csv")
+        return os.path.join(DATASET_XY_PATH, f"{self.ds}_labels", f"{self._id}.csv")
     
     def get_metadata(self):
         return self.metadata
@@ -155,7 +165,7 @@ class Track:
 def list_track_ids(ds_type="train"):
     return list(map(
         lambda f: int(f.split("/")[-1].split('.')[0]),
-        glob(os.path.join(FILES_BASE_PATH, f"{ds_type}_labels/*.csv"))
+        glob(os.path.join(DATASET_XY_PATH, f"{ds_type}_labels", "*.csv"))
     ))
 
 train_ids = lambda : list_track_ids("train")

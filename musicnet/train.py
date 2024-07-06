@@ -3,26 +3,20 @@ import logging, os
 logging.disable(logging.WARNING)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-from musicnet.utils import notes_vocab, instruments_vocab
+from musicnet.utils import notes_vocab, instruments_vocab, load_params
 import tensorflow as tf
 from tensorflow import keras
 from glob import glob
 from musicnet.model.Transformer import AudioTransformer, TransformerLRSchedule
 from tensorflow.nn import weighted_cross_entropy_with_logits
-from datetime import datetime
+from dvclive.keras import DVCLiveCallback
+from pathlib import Path
 
 if len(tf.config.list_physical_devices("GPU")) == 0:
     raise Exception("GPU not found")
 
-n_mels=128
-d_model=128
-num_layers=4
-num_heads=8
-dff=512
+params = load_params(("train", "shared"))
 target_classes = len(notes_vocab) * len(instruments_vocab)
-mha_dropout=0.1
-input_dropout=0.1
-batch_size=8
 
 def decode_record(record_bytes):
     example = tf.io.parse_example(record_bytes, {
@@ -30,7 +24,7 @@ def decode_record(record_bytes):
         "y": tf.io.FixedLenFeature([], tf.string, default_value="")
     })
     x = tf.io.parse_tensor(example["x"], tf.float32)
-    x.set_shape([None, n_mels])
+    x.set_shape([None, params["n_mels"]])
     y = tf.io.parse_tensor(example["y"], tf.bool)
     y.set_shape([None, target_classes])
 
@@ -41,25 +35,25 @@ def create_tf_record_ds(source_dir, num_parallel_reads="auto"):
     if num_parallel_reads == 'auto':
         num_parallel_reads = len(files)
     ds = tf.data.TFRecordDataset(files, num_parallel_reads=num_parallel_reads)
-    ds = ds.map(decode_record).shuffle(1000).batch(batch_size).prefetch(1)
+    ds = ds.map(decode_record).shuffle(1000).batch(params["batch_size"]).prefetch(1)
     return ds
 
-train_ds = create_tf_record_ds("../data/train")
-val_ds = create_tf_record_ds("../data/val")
+train_ds = create_tf_record_ds(str(Path(__file__).parent.with_name("data").joinpath("train")))
+val_ds = create_tf_record_ds(str(Path(__file__).parent.with_name("data").joinpath("val")))
 
 model = AudioTransformer(
-    n_mels=n_mels,
-    d_model=d_model,
-    num_layers=num_layers,
-    num_heads=num_heads,
-    dff=dff,
+    n_mels=params["n_mels"],
+    d_model=params["d_model"],
+    num_layers=params["num_layers"],
+    num_heads=params["num_heads"],
+    dff=params["dff"],
     seq_len=1000,
     target_classes=target_classes,
-    mha_dropout=mha_dropout,
-    input_dropout=input_dropout
+    mha_dropout=params["mha_dropout"],
+    input_dropout=params["input_dropout"]
 )
 
-lr_schedule = TransformerLRSchedule(d_model=d_model)
+lr_schedule = TransformerLRSchedule(d_model=params["d_model"])
 optimizer = keras.optimizers.Adam(lr_schedule, beta_1=0.9, beta_2=0.98, epsilon=1e-9)
 
 class F1FromSeqLogits(keras.metrics.F1Score):
@@ -80,8 +74,12 @@ model.compile(
 )
 
 # TODO: Tracking
-model.fit(train_ds, epochs=100, validation_data=val_ds)
+model.fit(
+    train_ds,
+    epochs=params["epochs"],
+    validation_data=val_ds,
+    callbacks=[DVCLiveCallback()]
+)
 
-date_str = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 # TODO: Test loading
-model.save(f"models/{date_str}.keras")
+model.save(str(Path(__file__).with_name("model.keras")))

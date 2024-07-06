@@ -1,0 +1,19 @@
+shared:
+  n_mels: 128
+preprocess:
+  datasets:
+    train:
+      size: 0.8
+      file_count: 30
+    val:
+      size: 0.2
+      file_count: 10
+train:
+  d_model: 128
+  num_layers: 4
+  num_heads: 8
+  dff: 512
+  mha_dropout: 0.2
+  input_dropout: 0.1
+  batch_size: 8
+  epochs: 20

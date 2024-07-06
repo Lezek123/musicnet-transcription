@@ -1,0 +1,68 @@
+schema: '2.0'
+stages:
+  preprocess:
+    cmd: python musicnet/preprocess.py
+    deps:
+    - path: data/MusicNet/musicnet/musicnet
+      hash: md5
+      md5: 00306b63ca8e52bf0bfc89063c3570a8.dir
+      size: 21728897172
+      nfiles: 660
+    params:
+      params.yaml:
+        preprocess:
+          datasets:
+            train:
+              size: 0.8
+              file_count: 30
+            val:
+              size: 0.2
+              file_count: 10
+        shared:
+          n_mels: 128
+    outs:
+    - path: data/train
+      hash: md5
+      md5: 6080ad0b2fd0f666376dc9c90c2c12d7.dir
+      size: 27470310300
+      nfiles: 30
+    - path: data/val
+      hash: md5
+      md5: f75b6a42bfc9ab738365249937f2b8f2.dir
+      size: 6864017400
+      nfiles: 10
+  train:
+    cmd: python musicnet/train.py
+    deps:
+    - path: data/train
+      hash: md5
+      md5: 6080ad0b2fd0f666376dc9c90c2c12d7.dir
+      size: 27470310300
+      nfiles: 30
+    - path: data/val
+      hash: md5
+      md5: f75b6a42bfc9ab738365249937f2b8f2.dir
+      size: 6864017400
+      nfiles: 10
+    params:
+      params.yaml:
+        shared:
+          n_mels: 128
+        train:
+          d_model: 128
+          num_layers: 4
+          num_heads: 8
+          dff: 512
+          mha_dropout: 0.2
+          input_dropout: 0.1
+          batch_size: 8
+          epochs: 20
+    outs:
+    - path: musicnet/model.keras
+      hash: md5
+      md5: 9a097ffa17af9d31e793362e75768766
+      size: 93238062
+    - path: musicnet/model.weights.h5
+      hash: md5
+      md5: 57121fce21bb47bf975aedd08ab089c7
+      size: 93236188
