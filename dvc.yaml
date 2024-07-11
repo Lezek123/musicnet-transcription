@@ -7,8 +7,10 @@ stages:
     - shared
     - preprocess
     outs:
-    - data/train
-    - data/val
+    - data/train:
+        cache: false
+    - data/val:
+        cache: false
   train:
     cmd: python musicnet/train.py
     deps:
@@ -18,10 +20,14 @@ stages:
     - shared
     - train
     outs:
-    - musicnet/model.keras
-    - musicnet/model.weights.h5
-    - dvclive/metrics.json
-    - dvclive/plots
+    - musicnet/model.keras:
+        persist: true
+    - musicnet/model.weights.h5:
+        persist: true
+    - dvclive/metrics.json:
+        persist: true
+    - dvclive/plots:
+        persist: true
 metrics:
 - dvclive/metrics.json
 plots:

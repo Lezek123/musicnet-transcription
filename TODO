@@ -1,0 +1,19 @@
+1. Setup DVC to push/pull data from/to Google Cloud bucket:
+https://dvc.org/doc/user-guide/data-management/remote-storage/google-cloud-storage
+
+- This is only for cache (ie. tracked data) so doesn't really matter...
+
+2. Setup a stage in the pipeline which actually uses `gcloud ai custom-jobs create` command to train the model, see:
+https://dvc.org/doc/user-guide/pipelines/external-dependencies-and-outputs
+
+https://cloud.google.com/compute/docs/gpus#l4-gpus
+https://cloud.google.com/compute/all-pricing/#accelerator-optimized
+https://cloud.google.com/vertex-ai/docs/training/configure-compute
+https://cloud.google.com/vertex-ai/docs/training/create-custom-job#create
+
+3. Adjust the training code accordingly
+(make dataset location dependent on the environment the code is run in etc.):
+https://cloud.google.com/vertex-ai/docs/training/code-requirements#best_practices_for_all_custom_training_code
+
+4. Try using gradient-checkpointing to save memory:
+https://github.com/cybertronai/gradient-checkpointing

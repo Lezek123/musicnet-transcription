@@ -1,6 +1,12 @@
 shared:
-  n_mels: 128
+  n_mels: 100
 preprocess:
+  chunk_size_sec: 10
+  chunk_shift_sec: 5
+  target_sr: 16000
+  note_rounding: 0.01
+  n_fft: 400 # 25 ms
+  hop_length: 160 # 10 ms
   datasets:
     train:
       size: 0.8
@@ -9,11 +15,14 @@ preprocess:
       size: 0.2
       file_count: 10
 train:
+  architecture: encoder-only
   d_model: 128
   num_layers: 4
   num_heads: 8
   dff: 512
-  mha_dropout: 0.2
-  input_dropout: 0.1
+  mha_dropout: 0.0
+  input_dropout: 0.0
   batch_size: 8
-  epochs: 20
+  epochs: 60
+  warmup_steps: 4800
+  max_lr: 0.0002

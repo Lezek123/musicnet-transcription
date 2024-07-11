@@ -11,6 +11,12 @@ stages:
     params:
       params.yaml:
         preprocess:
+          chunk_size_sec: 10
+          chunk_shift_sec: 5
+          target_sr: 16000
+          note_rounding: 0.01
+          n_fft: 400
+          hop_length: 160
           datasets:
             train:
               size: 0.8
@@ -19,50 +25,62 @@ stages:
               size: 0.2
               file_count: 10
         shared:
-          n_mels: 128
+          n_mels: 100
     outs:
     - path: data/train
       hash: md5
-      md5: 6080ad0b2fd0f666376dc9c90c2c12d7.dir
-      size: 27470310300
+      md5: 8952d3fe03f96f304adcd87c5950e7f5.dir
+      size: 25314131970
       nfiles: 30
     - path: data/val
       hash: md5
-      md5: f75b6a42bfc9ab738365249937f2b8f2.dir
-      size: 6864017400
+      md5: 55a53f10afe70d12d933d38e13e908bb.dir
+      size: 6325252260
       nfiles: 10
   train:
     cmd: python musicnet/train.py
     deps:
     - path: data/train
       hash: md5
-      md5: 6080ad0b2fd0f666376dc9c90c2c12d7.dir
-      size: 27470310300
+      md5: 8952d3fe03f96f304adcd87c5950e7f5.dir
+      size: 25314131970
       nfiles: 30
     - path: data/val
       hash: md5
-      md5: f75b6a42bfc9ab738365249937f2b8f2.dir
-      size: 6864017400
+      md5: 55a53f10afe70d12d933d38e13e908bb.dir
+      size: 6325252260
       nfiles: 10
     params:
       params.yaml:
         shared:
-          n_mels: 128
+          n_mels: 100
         train:
+          architecture: encoder-only
           d_model: 128
           num_layers: 4
           num_heads: 8
           dff: 512
-          mha_dropout: 0.2
-          input_dropout: 0.1
+          mha_dropout: 0.0
+          input_dropout: 0.0
           batch_size: 8
-          epochs: 20
+          epochs: 60
+          warmup_steps: 4800
+          max_lr: 0.0002
     outs:
+    - path: dvclive/metrics.json
+      hash: md5
+      md5: 4fda6c73ca6c58c2df4e8d990f238028
+      size: 214
+    - path: dvclive/plots
+      hash: md5
+      md5: 48869fe4acf55775f1ae2286067240ba.dir
+      size: 1454
+      nfiles: 4
     - path: musicnet/model.keras
       hash: md5
-      md5: 9a097ffa17af9d31e793362e75768766
-      size: 93238062
+      md5: 5da213edc28ebfbc96fab6f885ce1a8d
+      size: 34375012
     - path: musicnet/model.weights.h5
       hash: md5
-      md5: 57121fce21bb47bf975aedd08ab089c7
-      size: 93236188
+      md5: e4140981dcf5ac03aed834c213b68d57
+      size: 34373204

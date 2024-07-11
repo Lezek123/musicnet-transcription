@@ -20,7 +20,15 @@ class ChunkIterator:
             id = ids_train_val.pop()
             track = Track(id)
             print(f"loaded track {id}")
-            x_chunks, y_chunks = track.preprocess()
+            x_chunks, y_chunks = track.preprocess(
+                chunk_size_sec=params["chunk_size_sec"],
+                chunk_shift_sec=params["chunk_shift_sec"],
+                target_sr=params["target_sr"],
+                note_rounding=params["note_rounding"],
+                n_fft=params["n_fft"],
+                hop_length=params["hop_length"],
+                n_mels=params["n_mels"]
+            )
             self.x_chunks += list(x_chunks)
             self.y_chunks += list(y_chunks)
         return self.x_chunks.pop(0), self.y_chunks.pop(0)

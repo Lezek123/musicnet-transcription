@@ -5,6 +5,7 @@ import mido
 import numpy as np
 import librosa
 import math
+import tensorflow as tf
 from pathlib import Path
 import yaml
 
@@ -118,9 +119,9 @@ class Track:
         target_sr=16000,
         note_rounding=0.01,
         # Number of samples in a window per fft in spectrogram (25 ms)
-        n_fft = 400,
+        n_fft=400,
         # The amount of samples we are shifting after each fft in spectrogram (10 ms)
-        hop_length = 160,
+        hop_length=160,
         # Number of filters in mel spectrogram
         n_mels=128,
     ):
@@ -156,7 +157,9 @@ class Track:
                 hop_length=hop_length,
                 n_fft=n_fft,
                 n_mels=n_mels,
-                center=False
+                center=False,
+                fmax=4096, # Highest piano note has a frequency of ~4186 Hz
+                fmin=16, # Lowest piano note has a frequency of ~27 Hz
             )
             mel_spec_db = librosa.power_to_db(mel_spec)
             x_chunks.append(mel_spec_db.T)
@@ -170,3 +173,24 @@ def list_track_ids(ds_type="train"):
 
 train_ids = lambda : list_track_ids("train")
 test_ids = lambda : list_track_ids("test")
+
+def decode_record(record_bytes, n_mels, target_classes):
+    example = tf.io.parse_example(record_bytes, {
+        "x": tf.io.FixedLenFeature([], tf.string, default_value=""),
+        "y": tf.io.FixedLenFeature([], tf.string, default_value="")
+    })
+    x = tf.io.parse_tensor(example["x"], tf.float32)
+    x.set_shape([None, n_mels])
+    y = tf.io.parse_tensor(example["y"], tf.bool)
+    y.set_shape([None, target_classes])
+
+    return (x, y[:-1]), y[1:]
+
+def create_tf_record_ds(ds_type, n_mels, target_classes, batch_size, num_parallel_reads="auto"):
+    source_dir = str(Path(__file__).parent.with_name("data").joinpath(ds_type))
+    files = glob(os.path.join(source_dir, "*.tfrecord"))
+    if num_parallel_reads == 'auto':
+        num_parallel_reads = len(files)
+    ds = tf.data.TFRecordDataset(files, num_parallel_reads=num_parallel_reads)
+    ds = ds.map(lambda r: decode_record(r, n_mels, target_classes)).shuffle(1000).batch(batch_size).prefetch(1)
+    return ds
