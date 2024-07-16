@@ -1,21 +1,27 @@
-shared:
-  n_mels: 100
-preprocess:
-  chunk_size_sec: 10
-  chunk_shift_sec: 5
-  target_sr: 16000
-  note_rounding: 0.01
-  n_fft: 400 # 25 ms
-  hop_length: 160 # 10 ms
+midi_to_wav:
+  programs_whitelist: [0]
+wav_specs_and_notes:
+  use_converted_midis: true
+  preprocessor:
+    chunk_size_sec: 10
+    chunk_shift_sec: 5
+    target_sr: 44100
+    note_rounding: 0.01
+    n_fft: 2205 # 50 ms
+    hop_length: 441 # 10 ms
+    min_hz: 0
+    n_filters: 200
+    unit: amplitude
   datasets:
     train:
-      size: 0.8
+      size: 5000
       file_count: 30
     val:
-      size: 0.2
+      size: 1000
       file_count: 10
-train:
+transformer:
   architecture: encoder-only
+  dataset_size: 1.0
   d_model: 128
   num_layers: 4
   num_heads: 8
@@ -23,6 +29,6 @@ train:
   mha_dropout: 0.0
   input_dropout: 0.0
   batch_size: 8
-  epochs: 60
-  warmup_steps: 4800
+  epochs: 100
+  warmup_steps: 6250
   max_lr: 0.0002
