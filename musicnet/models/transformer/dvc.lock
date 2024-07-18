@@ -1,7 +1,7 @@
 schema: '2.0'
 stages:
   preprocess:
-    cmd: python ../../preprocessing/wav_nmel_to_notes/preprocess.py
+    cmd: python ../../preprocessing/wav_specs_and_notes/preprocess.py
     deps:
     - path: ../../../data/MusicNet/musicnet/musicnet
       hash: md5
@@ -9,36 +9,41 @@ stages:
       size: 21728897172
       nfiles: 660
     params:
-      ../../preprocessing/wav_nmel_to_notes/params.yaml:
-        datasets:
-          train:
-            size: 5000
-            file_count: 30
-          val:
-            size: 1000
-            file_count: 10
-        preprocessor:
-          n_mels: 100
-          chunk_size_sec: 10
-          chunk_shift_sec: 5
-          target_sr: 16000
-          note_rounding: 0.01
-          n_fft: 400
-          hop_length: 160
-        use_converted_midis: true
+      ../../../params.yaml:
+        midi_to_wav.programs_whitelist:
+        - 0
+        wav_specs_and_notes:
+          use_converted_midis: true
+          preprocessor:
+            chunk_size_sec: 10
+            chunk_shift_sec: 5
+            target_sr: 44100
+            note_rounding: 0.01
+            n_fft: 2205
+            hop_length: 441
+            min_hz: 0
+            n_filters: 200
+            unit: amplitude
+          datasets:
+            train:
+              size: 0.8
+              file_count: 30
+            val:
+              size: 0.2
+              file_count: 10
     outs:
-    - path: ../../../data/preprocessed/wav_nmel_to_notes
+    - path: ../../../data/preprocessed/wav_specs_and_notes
       hash: md5
-      md5: 5edfea23420b7c608f3fa91364439573.dir
-      size: 39486896370
+      md5: 1194046808f122bdd334856d656df3b7.dir
+      size: 46198100210
       nfiles: 80
   train:
     cmd: python train.py
     deps:
-    - path: ../../../data/preprocessed/wav_nmel_to_notes
+    - path: ../../../data/preprocessed/wav_specs_and_notes
       hash: md5
-      md5: 750793fa870f566915acffa32886ff80.dir
-      size: 36920280370
+      md5: 7588a2158ba7cea04a74c08c9b0346f5.dir
+      size: 42995960210
       nfiles: 80
     params:
       ../../../params.yaml:
@@ -55,25 +60,44 @@ stages:
           input_dropout: 0.0
           batch_size: 8
           epochs: 100
-          warmup_steps: 6250
+          warmup_steps: 6435
           max_lr: 0.0002
         wav_specs_and_notes.preprocessor.n_filters: 200
         wav_specs_and_notes.use_converted_midis: true
     outs:
     - path: dvclive/metrics.json
       hash: md5
-      md5: fe11fcf1b871c49468af2a6c0bb107ea
-      size: 214
+      md5: b7bcc73156deb3798d11cfeb9966c505
+      size: 213
     - path: dvclive/plots
       hash: md5
-      md5: b8d079ddb010123bc88bac57abb940d6.dir
-      size: 2726
+      md5: 3183c812761d109ab9798babb643aa00.dir
+      size: 8912
       nfiles: 4
     - path: model.keras
       hash: md5
-      md5: d9305f5c3df6daef5e33610c035bfbce
-      size: 33554193
+      md5: af819151a53d18942dd3cb0d985fa037
+      size: 33554361
     - path: model.weights.h5
       hash: md5
-      md5: 4e69992b25424c245720f63b29748597
+      md5: 4a6367fc61de4ba219d1ea7d08d4be57
       size: 33552344
+  convert_midi:
+    cmd: python ../../preprocessing/midi_to_wav/convert.py
+    deps:
+    - path: ../../../data/MusicNet/musicnet/musicnet
+      hash: md5
+      md5: 00306b63ca8e52bf0bfc89063c3570a8.dir
+      size: 21728897172
+      nfiles: 660
+    params:
+      ../../../params.yaml:
+        midi_to_wav:
+          programs_whitelist:
+          - 0
+    outs:
+    - path: ../../../data/preprocessed/midi_to_wav
+      hash: md5
+      md5: 571fd315a074b0d47f9ff9848294a557.dir
+      size: 11431428370
+      nfiles: 336

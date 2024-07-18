@@ -430,7 +430,7 @@ class F1FromSeqLogits(keras.metrics.F1Score):
         y_pred = tf.reshape(y_pred, [-1, y_pred.shape[-1]])
         return super().update_state(y_true, y_pred, **kwargs)
     
-class WeightedBinaryCrossentropy(keras.Loss):
+class WeightedBinaryCrossentropy(keras.losses.Loss):
     def __init__(self, pos_weight, name="weighted_binary_crossentropy", **kwargs):
         super().__init__(name=name, **kwargs)
         self.pos_weight = pos_weight

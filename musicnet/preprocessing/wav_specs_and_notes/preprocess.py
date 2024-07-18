@@ -17,7 +17,7 @@ if params["use_converted_midis"]:
     ids_train_val = get_midi_train_ids()
     TrackClass = MidiConvertedTrack
     if params["programs_whitelist"]:
-        instruments_vocab = { (v+1): k for k, v in enumerate(params["instruments_whitelist"]) }
+        instruments_vocab = { (v+1): k for k, v in enumerate(params["programs_whitelist"]) }
 else:
     ids_train_val = get_train_ids()
     TrackClass = Track
@@ -52,7 +52,7 @@ print(f"Total chunks: {total_chunks}")
 
 def serialize(x_chunk, y_chunk):
     x_chunk = tf.constant(x_chunk, dtype=tf.float32)
-    y_chunk = tf.constant(y_chunk, dtype=tf.bool)
+    y_chunk = tf.constant(y_chunk, dtype=tf.float32)
     x = tf.io.serialize_tensor(x_chunk)
     y = tf.io.serialize_tensor(y_chunk)
     feature = {
@@ -63,10 +63,14 @@ def serialize(x_chunk, y_chunk):
     return example_proto.SerializeToString()
 
 chunks = ChunkIterator()
+# FIXME:
+# We could also do it inside the loop to prevent
+# continuation of the train track from entering val set,
+# but then the chunks count will get messed up
+chunks_iter = iter(chunks)
 
 for ds_type, ds_config in params["datasets"].items():
     print(f"processing {ds_type} set".upper())
-    chunks_iter = iter(chunks)
     ds_size = ds_config["size"]
     ds_files = ds_config["file_count"]
     if ds_size > 1:
@@ -76,7 +80,7 @@ for ds_type, ds_config in params["datasets"].items():
     print(f"num files: {ds_files}, chunks per file: {chunks_per_file}")
     ds_dir = os.path.join(out_dir, ds_type)
     os.makedirs(ds_dir, 0o775, exist_ok=True)
-    for i in range(0, ds_config["file_count"]):
+    for i in range(0, ds_files):
         filepath = os.path.join(ds_dir, f"{str(i).zfill(3)}.tfrecord")
         with tf.io.TFRecordWriter(filepath) as writer:
             for j in range(0, chunks_per_file):

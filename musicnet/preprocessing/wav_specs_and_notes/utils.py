@@ -11,7 +11,7 @@ from numpy.fft import rfftfreq
 import random
 
 
-PREPROCESSED_DATA_DIR = os.path.join(PROJECT_ROOT_DIR, "data", "preprocessed", "wav_nmel_to_notes")
+PREPROCESSED_DATA_DIR = os.path.join(PROJECT_ROOT_DIR, "data", "preprocessed", "wav_specs_and_notes")
 
 def get_out_dir(from_midis = False):
     if from_midis:
@@ -103,7 +103,7 @@ def decode_record(record_bytes, n_filters, target_classes, architecture="encoder
     })
     x = tf.io.parse_tensor(example["x"], tf.float32)
     x.set_shape([None, n_filters])
-    y = tf.io.parse_tensor(example["y"], tf.bool)
+    y = tf.io.parse_tensor(example["y"], tf.float32)
     y.set_shape([None, target_classes])
 
     if architecture == "encoder-decoder":

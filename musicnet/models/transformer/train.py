@@ -3,7 +3,7 @@ import logging, os
 logging.disable(logging.WARNING)
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
-from musicnet.utils import notes_vocab, instruments_vocab, load_params
+from musicnet.utils import notes_vocab, instruments_vocab, load_params, get_training_artifacts_dir
 import tensorflow as tf
 import keras
 from musicnet.models.transformer.Transformer import (
@@ -14,6 +14,7 @@ from musicnet.models.transformer.Transformer import (
     EncoderOnlyAudioTransformer,
 )
 from musicnet.preprocessing.wav_specs_and_notes.utils import create_tf_record_ds
+from dvclive import Live
 from dvclive.keras import DVCLiveCallback
 from pathlib import Path
 
@@ -44,11 +45,11 @@ ds_params = {
 @tf.function
 def calc_positive_class_weight():
     train_ds = create_tf_record_ds("train", **ds_params)
-    positive_count = 0
-    negative_count = 0
+    positive_count = 0.0
+    negative_count = 0.0
     for _, y_batch in train_ds:
-        positive_count += tf.reduce_sum(tf.cast(y_batch, tf.int32))
-        negative_count += tf.reduce_sum(tf.cast(~y_batch, tf.int32))
+        positive_count += tf.reduce_sum(y_batch)
+        negative_count += tf.reduce_sum(1.0 - y_batch)
     return negative_count / positive_count
 
 pos_class_weight = calc_positive_class_weight().numpy()
@@ -86,11 +87,16 @@ model.compile(
     metrics=[F1FromSeqLogits(threshold=0.5, average="weighted")],
 )
 
-model.fit(
-    train_ds,
-    epochs=params["epochs"],
-    validation_data=val_ds,
-    callbacks=[DVCLiveCallback()],
-)
+training_artifacts_dir = get_training_artifacts_dir(Path(__file__))
+model_out_path = os.path.join(training_artifacts_dir, "model.keras")
+live_path = os.path.join(training_artifacts_dir, "dvclive")
 
-model.save(str(Path(__file__).with_name("model.keras")))
+with Live(live_path) as live:
+    model.fit(
+        train_ds,
+        epochs=params["epochs"],
+        validation_data=val_ds,
+        callbacks=[DVCLiveCallback(live=live)],
+    )
+
+model.save(model_out_path)

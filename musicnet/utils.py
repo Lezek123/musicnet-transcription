@@ -7,10 +7,14 @@ import librosa
 from pathlib import Path
 import yaml
 from functools import reduce
+from datetime import datetime
 import operator
 
 PROJECT_ROOT_DIR = str(Path(__file__).parent.parent)
-DATASET_BASE_PATH = os.path.join(PROJECT_ROOT_DIR, "data", "MusicNet")
+if os.environ.get("CLOUD_ML_PROJECT_ID"):
+    DATASET_BASE_PATH = "/gcs/musicnet-ds/MusicNet"
+else:
+    DATASET_BASE_PATH = os.path.join(PROJECT_ROOT_DIR, "data", "MusicNet")
 DATASET_XY_PATH = os.path.join(DATASET_BASE_PATH, "musicnet", "musicnet")
 
 def create_vocab(value_set):
@@ -111,9 +115,9 @@ class Track:
             if msg.type == "note_on" and msg.velocity > 0:
                 note_start_times[msg.channel][msg.note] = curr_time
             if msg.type == "note_off" or (msg.type == "note_on" and msg.velocity == 0):
-                if note_start_times[msg.channel][msg.note] == -1:
-                    print("WARNING! Empty note found!")
-                    # raise Exception(f"Empty note found!")
+                # TODO: Inspect why this happens pretty often
+                # if note_start_times[msg.channel][msg.note] == -1:
+                #     print("WARNING! Empty note found!")
                 notes.append({
                     "note": msg.note,
                     "channel": msg.channel,
@@ -166,5 +170,11 @@ def load_params(paths=None):
 def note_frequency(note_idx):
     note = list(notes_vocab.keys())[note_idx]
     return 440 * (2 ** ((note - 69) / 12))
-            
+
+def get_training_artifacts_dir(script_path: Path):
+    if os.environ.get("CLOUD_ML_PROJECT_ID"):
+        date_str = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        return f"/gcs/musicnet-ds/jobs/{date_str}"
+    else:
+        return os.path.dirname(script_path)
 

@@ -1,6 +1,5 @@
-from musicnet.utils import Track, get_train_ids, get_test_ids, BrokenMidiException
-from pathlib import Path
-from utils import MidiConvertedTrack, extract_midi_programs, EXTRACTED_MIDI_OUT_DIR, CONVERTED_MIDI_OUT_DIR, load_params
+from musicnet.utils import Track, get_train_ids, get_test_ids, BrokenMidiException, load_params
+from utils import MidiConvertedTrack, extract_midi_programs, EXTRACTED_MIDI_OUT_DIR, CONVERTED_MIDI_OUT_DIR
 from multiprocessing import Pool
 import os
 import subprocess
@@ -17,8 +16,9 @@ if os.path.exists(CONVERTED_MIDI_OUT_DIR):
     shutil.rmtree(CONVERTED_MIDI_OUT_DIR)
 for ds_name in datasets.keys():
     os.makedirs(os.path.join(CONVERTED_MIDI_OUT_DIR, ds_name), 0o775, exist_ok=True)
-if params["programs_whitelist"] and os.path.exists(EXTRACTED_MIDI_OUT_DIR):
-    shutil.rmtree(EXTRACTED_MIDI_OUT_DIR)
+if params["programs_whitelist"]:
+    if os.path.exists(EXTRACTED_MIDI_OUT_DIR):
+        shutil.rmtree(EXTRACTED_MIDI_OUT_DIR)
     os.makedirs(EXTRACTED_MIDI_OUT_DIR, 0o775)
 
 def obtain_input_path(id):
@@ -35,7 +35,7 @@ def obtain_input_path(id):
             return None
         midi_path = os.path.join(EXTRACTED_MIDI_OUT_DIR, f"{id}.midi")
         filtered_midi.save(midi_path)
-        print(f"Track {id} midi programs successfully extracted , p_in: {len(p_in)}, p_out: {len(p_out)}")
+        print(f"Track {id} midi programs successfully extracted! p_in: {len(p_in)}, p_out: {len(p_out)}")
         return id, midi_path
     else:
         return id, track.get_midi_path()

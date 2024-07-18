@@ -14,10 +14,10 @@ wav_specs_and_notes:
     unit: amplitude
   datasets:
     train:
-      size: 5000
+      size: 0.8
       file_count: 30
     val:
-      size: 1000
+      size: 0.2
       file_count: 10
 transformer:
   architecture: encoder-only
@@ -29,6 +29,6 @@ transformer:
   mha_dropout: 0.0
   input_dropout: 0.0
   batch_size: 8
-  epochs: 100
-  warmup_steps: 6250
+  epochs: 200
+  warmup_steps: 10000
   max_lr: 0.0002

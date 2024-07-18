@@ -5,7 +5,7 @@ stages:
     - ../../../data/MusicNet/musicnet/musicnet
     params:
     - ../../../params.yaml:
-        - midi_to_wav
+      - midi_to_wav
     outs:
     - ../../../data/preprocessed/midi_to_wav:
         cache: false
@@ -16,25 +16,24 @@ stages:
     - ../../../data/MusicNet/musicnet/musicnet
     params:
     - ../../../params.yaml:
-        - wav_specs_and_notes
-        - midi_to_wav.programs_whitelist
+      - wav_specs_and_notes
+      - midi_to_wav.programs_whitelist
     outs:
-    - ../../../data/preprocessed/wav_nmel_to_notes:
+    - ../../../data/preprocessed/wav_specs_and_notes:
         cache: false
         persist: true
   train:
     cmd: python train.py
     deps:
-    - ../../../data/preprocessed/wav_nmel_to_notes
+    - ../../../data/preprocessed/wav_specs_and_notes
     params:
     - ../../../params.yaml:
-        - midi_to_wav.programs_whitelist
-        - wav_specs_and_notes.preprocessor.n_filters
-        - wav_specs_and_notes.use_converted_midis
-        - transformer
+      - midi_to_wav.programs_whitelist
+      - wav_specs_and_notes.preprocessor.n_filters
+      - wav_specs_and_notes.use_converted_midis
+      - transformer
     outs:
     - model.keras
-    - model.weights.h5
     - dvclive/metrics.json
     - dvclive/plots
 metrics:
