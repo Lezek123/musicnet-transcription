@@ -9,6 +9,8 @@ import yaml
 from functools import reduce
 from datetime import datetime
 import operator
+from tensorflow import keras
+from tqdm import tqdm
 
 PROJECT_ROOT_DIR = str(Path(__file__).parent.parent)
 if os.environ.get("CLOUD_ML_PROJECT_ID"):
@@ -174,7 +176,41 @@ def note_frequency(note_idx):
 def get_training_artifacts_dir(script_path: Path):
     if os.environ.get("CLOUD_ML_PROJECT_ID"):
         date_str = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        return f"/gcs/musicnet-ds/jobs/{date_str}"
+        base_path = f"/gcs/musicnet-ds/jobs/{date_str}"
+        model_path = os.path.join(base_path, "model.keras")
+        live_path = os.path.join(base_path, "dvclive")
     else:
-        return os.path.dirname(script_path)
+        model_path = script_path.with_name("model.keras")
+        live_path = os.path.join(PROJECT_ROOT_DIR, "dvclive")
+    return model_path, live_path
 
+def find_lr(build_model, train_ds, early_stopping=True):
+    print("Searching for best learning rate...")
+    all_lrs = np.array([1e-4, 2.5e-4, 5e-4, 1e-3, 2.5e-3, 5e-3, 1e-2, 2.5e-2, 5e-2, 1e-1])
+    models = {}
+    epochs = [1, 2, 4]
+    n_lrs = [10, 5, 3, 1]
+
+    lrs = all_lrs.copy()
+    for i, e in enumerate(epochs):
+        initial_epoch = 0 if i == 0 else epochs[i-1]
+        performances = []
+        lrs_left = n_lrs[i]
+        lrs = np.sort(lrs[:lrs_left])
+        for lr in tqdm(list(lrs)):
+            if lr not in models:
+                model = build_model(keras.optimizers.Adam(lr))
+                models[lr] = model
+            history = models[lr].fit(train_ds, epochs=e, initial_epoch=initial_epoch, verbose=0)
+            loss = history.history["loss"][-1]
+            performances.append(loss)
+            print(lr, loss)
+            if early_stopping and len(performances) > n_lrs[i+1]:
+                if loss > max(np.sort(performances)[:n_lrs[i+1]]):
+                    print("Early stopping activated")
+                    break
+        print("\n\n")
+        lrs = lrs[np.argsort(performances)]
+    best_lr = lrs[0]
+    print("LR found: ", best_lr)
+    return models[best_lr], float(best_lr), epochs[-1]

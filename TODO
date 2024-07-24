@@ -17,3 +17,6 @@ https://cloud.google.com/vertex-ai/docs/training/code-requirements#best_practice
 
 4. Try using gradient-checkpointing to save memory:
 https://github.com/cybertronai/gradient-checkpointing
+
+Alternatives to Google Cloud:
+https://sagemaker.readthedocs.io/en/stable/

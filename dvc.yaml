@@ -1,41 +1,43 @@
 stages:
   convert_midi:
-    cmd: python ../../preprocessing/midi_to_wav/convert.py
+    cmd: python musicnet/preprocessing/midi_to_wav/convert.py
     deps:
-    - ../../../data/MusicNet/musicnet/musicnet
+    - data/MusicNet/musicnet/musicnet
     params:
-    - ../../../params.yaml:
+    - params.yaml:
       - midi_to_wav
     outs:
-    - ../../../data/preprocessed/midi_to_wav:
+    - data/preprocessed/midi_to_wav:
         cache: false
         persist: true
   preprocess:
-    cmd: python ../../preprocessing/wav_specs_and_notes/preprocess.py
+    cmd: python musicnet/preprocessing/wav_specs_and_notes/preprocess.py
     deps:
-    - ../../../data/MusicNet/musicnet/musicnet
+    - data/MusicNet/musicnet/musicnet
     params:
-    - ../../../params.yaml:
+    - params.yaml:
       - wav_specs_and_notes
       - midi_to_wav.programs_whitelist
     outs:
-    - ../../../data/preprocessed/wav_specs_and_notes:
+    - data/preprocessed/wav_specs_and_notes:
         cache: false
         persist: true
   train:
-    cmd: python train.py
+    cmd: python musicnet/models/cnn/train.py
     deps:
-    - ../../../data/preprocessed/wav_specs_and_notes
+    - data/preprocessed/wav_specs_and_notes
     params:
-    - ../../../params.yaml:
+    - params.yaml:
       - midi_to_wav.programs_whitelist
       - wav_specs_and_notes.preprocessor.n_filters
       - wav_specs_and_notes.use_converted_midis
-      - transformer
+      - cnn
     outs:
-    - model.keras
+    - musicnet/models/cnn/model.keras
     - dvclive/metrics.json
     - dvclive/plots
+params:
+- dvclive/params.yaml
 metrics:
 - dvclive/metrics.json
 plots:

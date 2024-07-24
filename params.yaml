@@ -32,3 +32,12 @@ transformer:
   epochs: 200
   warmup_steps: 10000
   max_lr: 0.0002
+cnn:
+  dataset_size: 1.0
+  n_layers: 2
+  n_neurons: 2048
+  kernel_size: 32
+  batch_size: 8
+  epochs: 200
+  lr: auto
+  conv_type: separable

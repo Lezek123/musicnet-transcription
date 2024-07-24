@@ -38,49 +38,39 @@ stages:
       size: 6325252260
       nfiles: 10
   train:
-    cmd: python musicnet/train.py
+    cmd: python musicnet/models/cnn/train.py
     deps:
-    - path: data/train
+    - path: data/preprocessed/wav_specs_and_notes
       hash: md5
-      md5: 8952d3fe03f96f304adcd87c5950e7f5.dir
-      size: 25314131970
-      nfiles: 30
-    - path: data/val
-      hash: md5
-      md5: 55a53f10afe70d12d933d38e13e908bb.dir
-      size: 6325252260
-      nfiles: 10
+      md5: 1194046808f122bdd334856d656df3b7.dir
+      size: 46198100210
+      nfiles: 80
     params:
       params.yaml:
-        shared:
-          n_mels: 100
-        train:
-          architecture: encoder-only
-          d_model: 128
-          num_layers: 4
-          num_heads: 8
-          dff: 512
-          mha_dropout: 0.0
-          input_dropout: 0.0
+        cnn:
+          dataset_size: 1.0
+          n_layers: 2
+          n_neurons: 2048
+          kernel_size: 32
           batch_size: 8
-          epochs: 60
-          warmup_steps: 4800
-          max_lr: 0.0002
+          epochs: 200
+          lr: auto
+          conv_type: separable
+        midi_to_wav.programs_whitelist:
+        - 0
+        wav_specs_and_notes.preprocessor.n_filters: 200
+        wav_specs_and_notes.use_converted_midis: true
     outs:
     - path: dvclive/metrics.json
       hash: md5
-      md5: 4fda6c73ca6c58c2df4e8d990f238028
-      size: 214
+      md5: beddacb3dd20fe97e5f5b94f9bd1969e
+      size: 213
     - path: dvclive/plots
       hash: md5
-      md5: 48869fe4acf55775f1ae2286067240ba.dir
-      size: 1454
+      md5: feba5acc5385890ab3b0f6ce5d7ead3a.dir
+      size: 17658
       nfiles: 4
-    - path: musicnet/model.keras
+    - path: musicnet/models/cnn/model.keras
       hash: md5
-      md5: 5da213edc28ebfbc96fab6f885ce1a8d
-      size: 34375012
-    - path: musicnet/model.weights.h5
-      hash: md5
-      md5: e4140981dcf5ac03aed834c213b68d57
-      size: 34373204
+      md5: 38256ca830e2d9a74613f72d51e55659
+      size: 59032408
