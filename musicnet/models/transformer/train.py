@@ -23,7 +23,7 @@ if len(tf.config.list_physical_devices("GPU")) == 0:
 
 params = load_params([
     "midi_to_wav.programs_whitelist",
-    "wav_specs_and_notes.preprocessor.n_filters",
+    "wav_specs_and_notes.preprocessor.spectogram.n_filters",
     "wav_specs_and_notes.use_converted_midis",
     "transformer.*"
 ])

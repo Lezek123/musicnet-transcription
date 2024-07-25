@@ -29,7 +29,7 @@ stages:
     params:
     - params.yaml:
       - midi_to_wav.programs_whitelist
-      - wav_specs_and_notes.preprocessor.n_filters
+      - wav_specs_and_notes.preprocessor.spectogram.n_filters
       - wav_specs_and_notes.use_converted_midis
       - cnn
     outs:

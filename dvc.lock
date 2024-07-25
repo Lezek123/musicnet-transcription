@@ -49,28 +49,30 @@ stages:
       params.yaml:
         cnn:
           dataset_size: 1.0
-          n_layers: 2
-          n_neurons: 2048
+          n_layers: 5
+          n_neurons: 1024
+          activation: gelu
           kernel_size: 32
           batch_size: 8
-          epochs: 200
-          lr: auto
+          epochs: 100
+          lr: 0.001
+          dropout_rate: 0.0
           conv_type: separable
         midi_to_wav.programs_whitelist:
         - 0
-        wav_specs_and_notes.preprocessor.n_filters: 200
+        wav_specs_and_notes.preprocessor.spectogram.n_filters: 200
         wav_specs_and_notes.use_converted_midis: true
     outs:
     - path: dvclive/metrics.json
       hash: md5
-      md5: beddacb3dd20fe97e5f5b94f9bd1969e
-      size: 213
+      md5: 90ce29bc94b8f6c06034593cce93b937
+      size: 214
     - path: dvclive/plots
       hash: md5
-      md5: feba5acc5385890ab3b0f6ce5d7ead3a.dir
-      size: 17658
+      md5: 1800fb8dd7ed85a7013c00f655c93d4d.dir
+      size: 8885
       nfiles: 4
     - path: musicnet/models/cnn/model.keras
       hash: md5
-      md5: 38256ca830e2d9a74613f72d51e55659
-      size: 59032408
+      md5: cbf23ada1b01852f0f2ee9b61208d661
+      size: 55996905

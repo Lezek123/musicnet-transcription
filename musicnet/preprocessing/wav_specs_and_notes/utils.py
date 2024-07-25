@@ -9,6 +9,7 @@ from musicnet.utils import Track, notes_vocab, PROJECT_ROOT_DIR
 from typing import Literal
 from numpy.fft import rfftfreq
 import random
+from typing import TypedDict, Union
 
 
 PREPROCESSED_DATA_DIR = os.path.join(PROJECT_ROOT_DIR, "data", "preprocessed", "wav_specs_and_notes")
@@ -19,12 +20,7 @@ def get_out_dir(from_midis = False):
     else:
         return os.path.join(PREPROCESSED_DATA_DIR, "from_wavs")
 
-@dataclass
-class Preprocessor():
-    chunk_size_sec: int
-    chunk_shift_sec: int
-    target_sr: int
-    note_rounding: float
+class SpectogramParams(TypedDict):
     # Number of samples in a window per fft in spectrogram
     n_fft: int
     # The amount of samples we are shifting after each fft in spectrogram
@@ -33,9 +29,18 @@ class Preprocessor():
     min_hz: int
     # Number of filters in the spectrogram (also determines max_hz)
     n_filters: int
+    # Spectogram values unit
+    unit: Literal["amplitude", "decibels"]
+
+@dataclass
+class Preprocessor():
+    chunk_size_sec: int
+    chunk_shift_sec: int
+    target_sr: int
+    note_rounding: float
+    spectogram_params: Union[SpectogramParams, Literal[False]]
     # Instruments vocabulary to use (missing instruments will be omitted)
     instruments_vocab: dict[int, int]
-    unit: Literal["amplitude", "decibels"]
         
     def count_chunks(self, track: Track):
         duration_sec = track.get_duration()
@@ -46,17 +51,18 @@ class Preprocessor():
         return np.round(column / self.note_rounding) * self.note_rounding
     
     def create_spectogram(self, signal):
+        params = self.spectogram_params
         audio_stft = librosa.core.stft(
             signal,
-            hop_length=self.hop_length,
-            n_fft=self.n_fft
+            hop_length=params["hop_length"],
+            n_fft=params["n_fft"]
         )
         amp_spectrogram = np.abs(audio_stft)
-        hz_frequencies = rfftfreq(self.n_fft, 1.0 / self.target_sr)
-        start_index = np.argmax(hz_frequencies >= self.min_hz)
-        end_index = start_index + self.n_filters
+        hz_frequencies = rfftfreq(params["n_fft"], 1.0 / self.target_sr)
+        start_index = np.argmax(hz_frequencies >= params["min_hz"])
+        end_index = start_index + params["n_filters"]
         amp_spectrogram = amp_spectrogram[start_index:end_index, :]
-        if self.unit == "amplitude":
+        if params["unit"] == "amplitude":
             return amp_spectrogram
         else:
             return librosa.amplitude_to_db(amp_spectrogram)
@@ -78,7 +84,7 @@ class Preprocessor():
         for c in range(0, num_chunks):
             start_s = c * self.chunk_shift_sec
             end_s = start_s + self.chunk_size_sec
-            wav_chunk = wav_data[start_s * self.target_sr : end_s * self.target_sr]
+            wav_chunk = wav_data[start_s * self.target_sr : end_s * self.target_sr].copy()
             chunk_notes = notes[(notes["start"] >= start_s) & (notes["start"] < end_s - self.note_rounding)].copy()
             
             seq = np.zeros(shape=(int(self.chunk_size_sec / self.note_rounding), len(notes_vocab) * len(instruments_vocab)))
@@ -92,8 +98,11 @@ class Preprocessor():
                 seq[start_idx : end_idx, note_idx] = 1
             y_chunks.append(seq)
 
-            spec = self.create_spectogram(wav_chunk)
-            x_chunks.append(spec.T)
+            if self.spectogram_params:
+                spec = self.create_spectogram(wav_chunk)
+                x_chunks.append(spec.T)
+            else:
+                x_chunks.append(wav_chunk.reshape(-1, 1))
         return np.array(x_chunks), np.array(y_chunks)
     
 def decode_record(record_bytes, n_filters, target_classes, architecture="encoder-decoder"):

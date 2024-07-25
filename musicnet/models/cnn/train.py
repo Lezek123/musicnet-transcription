@@ -20,7 +20,7 @@ if len(tf.config.list_physical_devices("GPU")) == 0:
 
 params = load_params([
     "midi_to_wav.programs_whitelist",
-    "wav_specs_and_notes.preprocessor.n_filters",
+    "wav_specs_and_notes.preprocessor.spectogram.n_filters",
     "wav_specs_and_notes.use_converted_midis",
     "cnn.*"
 ])
@@ -50,6 +50,7 @@ def calc_positive_class_weight():
     return negative_count / positive_count
 
 pos_class_weight = calc_positive_class_weight().numpy()
+loss=WeightedBinaryCrossentropy(pos_class_weight)
 
 train_ds = create_tf_record_ds("train", **ds_params)
 val_ds = create_tf_record_ds("val", **ds_params)
@@ -60,37 +61,64 @@ def build_model(optimizer, **kwargs):
     else:
         conv_layer = tf.keras.layers.Conv1D
 
-    model = keras.models.Sequential()
-    model.add(tf.keras.Input(shape=[1000, params["n_filters"]]))
-    model.add(tf.keras.layers.BatchNormalization(epsilon=1e-5))
-    for _ in range(params["n_layers"]):
-        model.add(
-            conv_layer(
-                params["n_neurons"],
-                kernel_size=params["kernel_size"],
-                padding="same",
-                activation="relu"
-            )
-        )
-    model.add(conv_layer(target_classes, kernel_size=params["kernel_size"], padding="same", activation="relu"))
+    inputs = tf.keras.Input(shape=[1000, params["n_filters"]])
+    x = tf.keras.layers.BatchNormalization(
+        epsilon=1e-5,
+        input_shape=[1000, params["n_filters"]]
+    )(inputs)
+
+    skip_x = None
+    for l in range(params["n_layers"]):
+        x = conv_layer(
+            params["n_neurons"],
+            kernel_size=params["kernel_size"],
+            padding="same",
+            activation=None
+        )(x)
+        # x = tf.keras.layers.BatchNormalization(
+        #     epsilon=1e-5,
+        #     input_shape=[1000, params["n_neurons"]]
+        # )(x)
+        if l % 2 == 0 and skip_x is not None:
+            # Residual connection
+            x = tf.keras.layers.Add()([x, skip_x])
+            x = tf.keras.activations.get(params["activation"])(x)
+            skip_x = x
+        else:
+            x = tf.keras.activations.get(params["activation"])(x)
+            if skip_x is None:
+                skip_x = x
+
+    if params["dropout_rate"]:
+        x = tf.keras.layers.Dropout(
+            rate=params["dropout_rate"],
+            # Force the same channels to be dropped in all timesteps 
+            # see: https://keras.io/api/layers/regularization_layers/dropout/
+            noise_shape=(None, 1, params["n_neurons"])
+        )(x)
+    x = conv_layer(target_classes, kernel_size=params["kernel_size"], padding="same", activation=None)(x)
+    model = keras.Model(inputs=inputs, outputs=x)
     model.compile(
-        loss=WeightedBinaryCrossentropy(pos_class_weight),
+        loss=loss,
         optimizer=optimizer,
         **kwargs
     )
     return model
 
+# model = build_model(keras.optimizers.Adam())
+# model.summary()
+# tf.keras.utils.plot_model(model, "model.png")
+
 model_path, live_path = get_training_artifacts_dir(Path(__file__))    
 
 with Live(live_path) as live:
-    loss = WeightedBinaryCrossentropy(pos_class_weight)
     metrics = [F1FromSeqLogits(threshold=0.5, average="weighted")]
     if params["lr"] == "auto":
         model, best_lr, init_epoch = find_lr(build_model, train_ds)
         model.compile(optimizer=keras.optimizers.Adam(best_lr), loss=loss, metrics=metrics)
         live.log_param("lr", best_lr)
     else:
-        model = build_model(optimizer=keras.optimizers.Adam(params["lr"]), loss=loss, metrics=metrics)
+        model = build_model(optimizer=keras.optimizers.Adam(params["lr"]), metrics=metrics)
         init_epoch = 0
         live.log_param("lr", params["lr"])
     
