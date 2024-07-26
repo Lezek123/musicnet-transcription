@@ -5,7 +5,7 @@ import tensorflow as tf
 import os
 from glob import glob
 from dataclasses import dataclass
-from musicnet.utils import Track, notes_vocab, PROJECT_ROOT_DIR
+from musicnet.utils import Track, notes_vocab, PROJECT_ROOT_DIR, IS_CLOUD
 from typing import Literal
 from numpy.fft import rfftfreq
 import random
@@ -129,8 +129,8 @@ def create_tf_record_ds(
     use_converted_midis=False,
     dataset_size=1.0,
     num_parallel_reads="auto",
-    shuffle=True,
-    buffer_size=1000
+    buffer_size=None,
+    shuffle=True
 ):
     source_dir = os.path.join(get_out_dir(use_converted_midis), ds_type)
     files = glob(os.path.join(source_dir, "*.tfrecord"))
@@ -142,6 +142,9 @@ def create_tf_record_ds(
         num_parallel_reads = len(files)
     ds = tf.data.TFRecordDataset(files, num_parallel_reads=num_parallel_reads)
     ds = ds.map(lambda r: decode_record(r, n_filters, target_classes, architecture))
+    if IS_CLOUD:
+        ds = ds.cache()
     if shuffle:
+        buffer_size = ds.cardinality() if IS_CLOUD else (buffer_size or 1000)
         ds = ds.shuffle(buffer_size)
     return ds.batch(batch_size).prefetch(1)

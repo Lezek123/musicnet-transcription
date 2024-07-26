@@ -13,7 +13,9 @@ from tensorflow import keras
 from tqdm import tqdm
 
 PROJECT_ROOT_DIR = str(Path(__file__).parent.parent)
-if os.environ.get("CLOUD_ML_PROJECT_ID"):
+IS_CLOUD = bool(os.environ.get("CLOUD_ML_PROJECT_ID"))
+
+if IS_CLOUD:
     DATASET_BASE_PATH = "/gcs/musicnet-ds/MusicNet"
 else:
     DATASET_BASE_PATH = os.path.join(PROJECT_ROOT_DIR, "data", "MusicNet")
@@ -175,7 +177,7 @@ def note_frequency(note_idx):
     return 440 * (2 ** ((note - 69) / 12))
 
 def get_training_artifacts_dir(script_path: Path):
-    if os.environ.get("CLOUD_ML_PROJECT_ID"):
+    if IS_CLOUD:
         date_str = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
         base_path = f"/gcs/musicnet-ds/jobs/{date_str}"
         model_path = os.path.join(base_path, "model.keras")

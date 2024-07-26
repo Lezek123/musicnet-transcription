@@ -4,8 +4,7 @@ stages:
     deps:
     - data/MusicNet/musicnet/musicnet
     params:
-    - params.yaml:
-      - midi_to_wav
+    - params.yaml
     outs:
     - data/preprocessed/midi_to_wav:
         cache: false
@@ -15,9 +14,7 @@ stages:
     deps:
     - data/MusicNet/musicnet/musicnet
     params:
-    - params.yaml:
-      - wav_specs_and_notes
-      - midi_to_wav.programs_whitelist
+    - params.yaml
     outs:
     - data/preprocessed/wav_specs_and_notes:
         cache: false
@@ -27,11 +24,7 @@ stages:
     deps:
     - data/preprocessed/wav_specs_and_notes
     params:
-    - params.yaml:
-      - midi_to_wav.programs_whitelist
-      - wav_specs_and_notes.preprocessor.spectogram.n_filters
-      - wav_specs_and_notes.use_converted_midis
-      - cnn
+    - params.yaml
     outs:
     - musicnet/models/cnn/model.keras
     - dvclive/metrics.json
