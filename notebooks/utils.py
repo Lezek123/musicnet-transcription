@@ -12,8 +12,8 @@ def y_vs_y_pred_vis(y, y_pred, size=(20, 8), freq_limit=1000):
         y_pred == True,
         # True positive: green, False positive: red
         np.where(y == True, np.array([0, 255, 0]), np.array([255, 0, 0])),
-        # False negative: white, True negative: black
-        np.where(y == True, np.array([255, 255, 255]), np.array([0, 0, 0]))
+        # False negative: greyish-green, True negative: black
+        np.where(y == True, np.array([30, 60, 30]), np.array([0, 0, 0]))
     )
     pixels = pixels.astype(np.uint8)
 

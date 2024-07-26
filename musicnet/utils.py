@@ -118,8 +118,9 @@ class Track:
                 note_start_times[msg.channel][msg.note] = curr_time
             if msg.type == "note_off" or (msg.type == "note_on" and msg.velocity == 0):
                 # TODO: Inspect why this happens pretty often
-                # if note_start_times[msg.channel][msg.note] == -1:
-                #     print("WARNING! Empty note found!")
+                if note_start_times[msg.channel][msg.note] == -1:
+                    # print("WARNING! Empty note found!")
+                    continue
                 notes.append({
                     "note": msg.note,
                     "channel": msg.channel,

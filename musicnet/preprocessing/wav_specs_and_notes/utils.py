@@ -38,7 +38,7 @@ class Preprocessor():
     chunk_shift_sec: int
     target_sr: int
     note_rounding: float
-    spectogram_params: Union[SpectogramParams, Literal[False]]
+    spectogram: Union[SpectogramParams, Literal[False]]
     # Instruments vocabulary to use (missing instruments will be omitted)
     instruments_vocab: dict[int, int]
         
@@ -51,7 +51,7 @@ class Preprocessor():
         return np.round(column / self.note_rounding) * self.note_rounding
     
     def create_spectogram(self, signal):
-        params = self.spectogram_params
+        params = self.spectogram
         audio_stft = librosa.core.stft(
             signal,
             hop_length=params["hop_length"],
@@ -76,7 +76,7 @@ class Preprocessor():
         
         num_chunks = self.count_chunks(track)
         padded_track_end_sec = self.chunk_size_sec + (num_chunks - 1) * self.chunk_shift_sec
-        wav_data = np.pad(wav_data, (0, padded_track_end_sec * self.target_sr - len(wav_data)))
+        wav_data = np.pad(wav_data, (0, int(padded_track_end_sec * self.target_sr) - len(wav_data)))
 
         x_chunks = []
         y_chunks = []
@@ -84,7 +84,7 @@ class Preprocessor():
         for c in range(0, num_chunks):
             start_s = c * self.chunk_shift_sec
             end_s = start_s + self.chunk_size_sec
-            wav_chunk = wav_data[start_s * self.target_sr : end_s * self.target_sr].copy()
+            wav_chunk = wav_data[int(start_s * self.target_sr) : int(end_s * self.target_sr)].copy()
             chunk_notes = notes[(notes["start"] >= start_s) & (notes["start"] < end_s - self.note_rounding)].copy()
             
             seq = np.zeros(shape=(int(self.chunk_size_sec / self.note_rounding), len(notes_vocab) * len(instruments_vocab)))
@@ -98,7 +98,7 @@ class Preprocessor():
                 seq[start_idx : end_idx, note_idx] = 1
             y_chunks.append(seq)
 
-            if self.spectogram_params:
+            if self.spectogram:
                 spec = self.create_spectogram(wav_chunk)
                 x_chunks.append(spec.T)
             else:
@@ -128,15 +128,20 @@ def create_tf_record_ds(
     architecture,
     use_converted_midis=False,
     dataset_size=1.0,
-    num_parallel_reads="auto"
+    num_parallel_reads="auto",
+    shuffle=True,
+    buffer_size=1000
 ):
     source_dir = os.path.join(get_out_dir(use_converted_midis), ds_type)
     files = glob(os.path.join(source_dir, "*.tfrecord"))
-    random.shuffle(files)
+    if shuffle:
+        random.shuffle(files)
     files = files[:int(dataset_size * len(files))]
 
     if num_parallel_reads == 'auto':
         num_parallel_reads = len(files)
     ds = tf.data.TFRecordDataset(files, num_parallel_reads=num_parallel_reads)
-    ds = ds.map(lambda r: decode_record(r, n_filters, target_classes, architecture)).shuffle(1000).batch(batch_size).prefetch(1)
-    return ds
+    ds = ds.map(lambda r: decode_record(r, n_filters, target_classes, architecture))
+    if shuffle:
+        ds = ds.shuffle(buffer_size)
+    return ds.batch(batch_size).prefetch(1)

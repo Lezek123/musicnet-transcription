@@ -75,10 +75,6 @@ def build_model(optimizer, **kwargs):
             padding="same",
             activation=None
         )(x)
-        # x = tf.keras.layers.BatchNormalization(
-        #     epsilon=1e-5,
-        #     input_shape=[1000, params["n_neurons"]]
-        # )(x)
         if l % 2 == 0 and skip_x is not None:
             # Residual connection
             x = tf.keras.layers.Add()([x, skip_x])
@@ -112,7 +108,12 @@ def build_model(optimizer, **kwargs):
 model_path, live_path = get_training_artifacts_dir(Path(__file__))    
 
 with Live(live_path) as live:
-    metrics = [F1FromSeqLogits(threshold=0.5, average="weighted")]
+    metrics = [
+        F1FromSeqLogits(threshold=0.5, average="weighted", name="f1_weighted"),
+        F1FromSeqLogits(threshold=0.5, average="micro", name="f1_global"),
+        keras.metrics.Precision(0, name="precision"),
+        keras.metrics.Recall(0, name="recall")
+    ]
     if params["lr"] == "auto":
         model, best_lr, init_epoch = find_lr(build_model, train_ds)
         model.compile(optimizer=keras.optimizers.Adam(best_lr), loss=loss, metrics=metrics)

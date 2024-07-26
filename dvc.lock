@@ -1,7 +1,7 @@
 schema: '2.0'
 stages:
   preprocess:
-    cmd: python musicnet/preprocess.py
+    cmd: python musicnet/preprocessing/wav_specs_and_notes/preprocess.py
     deps:
     - path: data/MusicNet/musicnet/musicnet
       hash: md5
@@ -10,13 +10,21 @@ stages:
       nfiles: 660
     params:
       params.yaml:
-        preprocess:
-          chunk_size_sec: 10
-          chunk_shift_sec: 5
-          target_sr: 16000
-          note_rounding: 0.01
-          n_fft: 400
-          hop_length: 160
+        midi_to_wav.programs_whitelist:
+        - 0
+        wav_specs_and_notes:
+          use_converted_midis: true
+          preprocessor:
+            chunk_size_sec: 10
+            chunk_shift_sec: 5
+            target_sr: 44100
+            note_rounding: 0.01
+            spectogram:
+              n_fft: 2205
+              hop_length: 441
+              min_hz: 0
+              n_filters: 200
+              unit: decibels
           datasets:
             train:
               size: 0.8
@@ -24,25 +32,18 @@ stages:
             val:
               size: 0.2
               file_count: 10
-        shared:
-          n_mels: 100
     outs:
-    - path: data/train
+    - path: data/preprocessed/wav_specs_and_notes
       hash: md5
-      md5: 8952d3fe03f96f304adcd87c5950e7f5.dir
-      size: 25314131970
-      nfiles: 30
-    - path: data/val
-      hash: md5
-      md5: 55a53f10afe70d12d933d38e13e908bb.dir
-      size: 6325252260
-      nfiles: 10
+      md5: 0db524f9f52aa438feddb31230b74e4f.dir
+      size: 46198100210
+      nfiles: 80
   train:
     cmd: python musicnet/models/cnn/train.py
     deps:
     - path: data/preprocessed/wav_specs_and_notes
       hash: md5
-      md5: 1194046808f122bdd334856d656df3b7.dir
+      md5: 0db524f9f52aa438feddb31230b74e4f.dir
       size: 46198100210
       nfiles: 80
     params:
@@ -50,11 +51,11 @@ stages:
         cnn:
           dataset_size: 1.0
           n_layers: 5
-          n_neurons: 1024
+          n_neurons: 2048
           activation: gelu
-          kernel_size: 32
+          kernel_size: 16
           batch_size: 8
-          epochs: 100
+          epochs: 80
           lr: 0.001
           dropout_rate: 0.0
           conv_type: separable
@@ -65,14 +66,14 @@ stages:
     outs:
     - path: dvclive/metrics.json
       hash: md5
-      md5: 90ce29bc94b8f6c06034593cce93b937
-      size: 214
+      md5: 37f9d7395a2033c996ecd564b4e3f861
+      size: 457
     - path: dvclive/plots
       hash: md5
-      md5: 1800fb8dd7ed85a7013c00f655c93d4d.dir
-      size: 8885
-      nfiles: 4
+      md5: 0d3d61f6270e901265f3d442e5adac41.dir
+      size: 17742
+      nfiles: 10
     - path: musicnet/models/cnn/model.keras
       hash: md5
-      md5: cbf23ada1b01852f0f2ee9b61208d661
-      size: 55996905
+      md5: ea0f9547438488e6f82c7e521076fe2e
+      size: 210501471
