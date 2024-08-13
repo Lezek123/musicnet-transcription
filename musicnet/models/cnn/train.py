@@ -20,6 +20,8 @@ from musicnet.config.model.common import LRDerivation
 def train(train_ds: tf.data.Dataset, val_ds: tf.data.Dataset, config: CNNConfig, live: Live, model_path: str):
     pos_class_weight = calc_positive_class_weight(train_ds).numpy()
     loss = WeightedBinaryCrossentropy(pos_class_weight)
+
+    print("Pos class weight:", pos_class_weight)
     
     train_iter = iter(train_ds)
     (x_batch, y_batch) = train_iter.get_next()

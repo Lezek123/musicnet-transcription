@@ -28,7 +28,7 @@ class SyntheticTrack(ConvertableMidiTrack):
 class SyntheticMidiDataset(BaseDataset):
     def __init__(self, config: SynthMidiToWavConfig):
         # Only one instrument allowed for now
-        instruments_vocab = create_vocab([0])
+        instruments_vocab = create_vocab([1])
         notes_vocab = create_vocab(list(range(config.min_note, config.max_note)))
         super().__init__(instruments_vocab, notes_vocab)
 
