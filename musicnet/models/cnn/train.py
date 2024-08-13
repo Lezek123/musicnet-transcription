@@ -1,134 +1,94 @@
-import logging, os
-
-logging.disable(logging.WARNING)
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-
-from musicnet.utils import notes_vocab, instruments_vocab, load_params, get_training_artifacts_dir, find_lr
 import tensorflow as tf
 import keras
-from musicnet.models.transformer.Transformer import (
+from musicnet.models.utils import (
     WeightedBinaryCrossentropy,
-    F1FromSeqLogits,
+    calc_positive_class_weight,
+    find_lr,
+    get_common_metrics
 )
-from musicnet.preprocessing.wav_specs_and_notes.utils import create_tf_record_ds
 from dvclive import Live
 from dvclive.keras import DVCLiveCallback
-from pathlib import Path
+from musicnet.config.model.CNNConfig import CNNConfig, ConvType
+from musicnet.config.model.common import LRDerivation
 
-if len(tf.config.list_physical_devices("GPU")) == 0:
-    raise Exception("GPU not found")
+# TODO:
+# Configure DVC to always use temp dir for experiments
+# Try to understand what it is actually doing w.r.t. stashing, refs etc.
+# Perhaps some other options like --include-utracked will be needed to get the behavior I'm expecting
+# (but in general avoid running experiments with untracked files for other purposes than simple tests and delete them afterwards)
 
-params = load_params([
-    "midi_to_wav.programs_whitelist",
-    "wav_specs_and_notes.preprocessor.spectogram.n_filters",
-    "wav_specs_and_notes.use_converted_midis",
-    "cnn.*"
-])
+def train(train_ds: tf.data.Dataset, val_ds: tf.data.Dataset, config: CNNConfig, live: Live, model_path: str):
+    pos_class_weight = calc_positive_class_weight(train_ds).numpy()
+    loss = WeightedBinaryCrossentropy(pos_class_weight)
+    
+    train_iter = iter(train_ds)
+    (x_batch, y_batch) = train_iter.get_next()
+    x_shape = x_batch.shape[1:]
+    y_shape = y_batch.shape[1:]
 
-if params["programs_whitelist"]:
-    target_classes = len(notes_vocab) * len(params["programs_whitelist"])
-else:
-    target_classes = len(notes_vocab) * len(instruments_vocab)
-
-ds_params = {
-    "architecture": "cnn",
-    "n_filters": params["n_filters"],
-    "target_classes": target_classes,
-    "batch_size": params["batch_size"],
-    "dataset_size": params["dataset_size"],
-    "use_converted_midis": params["use_converted_midis"]
-}
-
-@tf.function
-def calc_positive_class_weight():
-    train_ds = create_tf_record_ds("train", **ds_params)
-    positive_count = 0.0
-    negative_count = 0.0
-    for _, y_batch in train_ds:
-        positive_count += tf.reduce_sum(y_batch)
-        negative_count += tf.reduce_sum(1.0 - y_batch)
-    return negative_count / positive_count
-
-pos_class_weight = calc_positive_class_weight().numpy()
-loss=WeightedBinaryCrossentropy(pos_class_weight)
-
-train_ds = create_tf_record_ds("train", **ds_params)
-val_ds = create_tf_record_ds("val", **ds_params)
-
-def build_model(optimizer, **kwargs):
-    if params["conv_type"] == "separable":
-        conv_layer = tf.keras.layers.SeparableConv1D
-    else:
-        conv_layer = tf.keras.layers.Conv1D
-
-    inputs = tf.keras.Input(shape=[1000, params["n_filters"]])
-    x = tf.keras.layers.BatchNormalization(
-        epsilon=1e-5,
-        input_shape=[1000, params["n_filters"]]
-    )(inputs)
-
-    skip_x = None
-    for l in range(params["n_layers"]):
-        x = conv_layer(
-            params["n_neurons"],
-            kernel_size=params["kernel_size"],
-            padding="same",
-            activation=None
-        )(x)
-        if l % 2 == 0 and skip_x is not None:
-            # Residual connection
-            x = tf.keras.layers.Add()([x, skip_x])
-            x = tf.keras.activations.get(params["activation"])(x)
-            skip_x = x
+    def build_model(optimizer, **kwargs):
+        if config.conv_type == ConvType.SEPARABLE:
+            conv_layer = tf.keras.layers.SeparableConv1D
         else:
-            x = tf.keras.activations.get(params["activation"])(x)
-            if skip_x is None:
+            conv_layer = tf.keras.layers.Conv1D
+
+        inputs = tf.keras.Input(shape=x_shape)
+        x = tf.keras.layers.BatchNormalization(
+            epsilon=1e-5,
+            input_shape=x_shape[1:]
+        )(inputs)
+
+        skip_x = None
+        for l in range(config.n_layers):
+            x = conv_layer(
+                config.n_neurons,
+                kernel_size=config.kernel_size,
+                padding="same",
+                activation=None
+            )(x)
+            if l % 2 == 0 and skip_x is not None:
+                # Residual connection
+                x = tf.keras.layers.Add()([x, skip_x])
+                x = tf.keras.layers.Activation(config.activation.value)(x)
                 skip_x = x
+            else:
+                x = tf.keras.layers.Activation(config.activation.value)(x)
+                if skip_x is None:
+                    skip_x = x
 
-    if params["dropout_rate"]:
-        x = tf.keras.layers.Dropout(
-            rate=params["dropout_rate"],
-            # Force the same channels to be dropped in all timesteps 
-            # see: https://keras.io/api/layers/regularization_layers/dropout/
-            noise_shape=(None, 1, params["n_neurons"])
-        )(x)
-    x = conv_layer(target_classes, kernel_size=params["kernel_size"], padding="same", activation=None)(x)
-    model = keras.Model(inputs=inputs, outputs=x)
-    model.compile(
-        loss=loss,
-        optimizer=optimizer,
-        **kwargs
-    )
-    return model
+        if config.dropout_rate:
+            x = tf.keras.layers.Dropout(
+                rate=config.dropout_rate,
+                # Force the same channels to be dropped in all timesteps 
+                # see: https://keras.io/api/layers/regularization_layers/dropout/
+                noise_shape=(None, 1, config.n_neurons)
+            )(x)
+        x = conv_layer(y_shape[-1], kernel_size=config.kernel_size, padding="same", activation=None)(x)
+        model = keras.Model(inputs=inputs, outputs=x)
+        model.compile(
+            loss=loss,
+            optimizer=optimizer,
+            **kwargs
+        )
+        return model  
 
-# model = build_model(keras.optimizers.Adam())
-# model.summary()
-# tf.keras.utils.plot_model(model, "model.png")
-
-model_path, live_path = get_training_artifacts_dir(Path(__file__))    
-
-with Live(live_path) as live:
-    metrics = [
-        F1FromSeqLogits(threshold=0.5, average="weighted", name="f1_weighted"),
-        F1FromSeqLogits(threshold=0.5, average="micro", name="f1_global"),
-        keras.metrics.Precision(0, name="precision"),
-        keras.metrics.Recall(0, name="recall")
-    ]
-    if params["lr"] == "auto":
+    metrics = get_common_metrics()
+    if config.lr == LRDerivation.AUTO:
         model, best_lr, init_epoch = find_lr(build_model, train_ds)
         model.compile(optimizer=keras.optimizers.Adam(best_lr), loss=loss, metrics=metrics)
         live.log_param("lr", best_lr)
     else:
-        model = build_model(optimizer=keras.optimizers.Adam(params["lr"]), metrics=metrics)
+        model = build_model(optimizer=keras.optimizers.Adam(config.lr), metrics=metrics)
         init_epoch = 0
-        live.log_param("lr", params["lr"])
+        live.log_param("lr", config.lr)
     
     model.fit(
         train_ds,
-        epochs=params["epochs"],
+        epochs=config.epochs,
         initial_epoch=init_epoch,
         validation_data=val_ds,
         callbacks=[DVCLiveCallback(live=live)],
     )
 
-model.save(model_path)
+    model.save(model_path)
+    live.log_artifact(model_path)

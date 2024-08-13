@@ -4,7 +4,6 @@
 import numpy as np
 import tensorflow as tf
 import keras
-from tensorflow.nn import weighted_cross_entropy_with_logits
 
 class PositionalEncoding(keras.layers.Layer):
     def __init__(self, max_steps, max_dims, dtype=tf.float32, **kwargs):
@@ -383,13 +382,12 @@ class EncoderOnlyAudioTransformer(keras.Model):
 
 # Use the Adam optimizer with a custom learning rate scheduler according to the formula in the original Transformer paper.
 class TransformerLRSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
-    def __init__(self, d_model, warmup_steps=4000):
+    def __init__(self, d_model: int, warmup_steps=4000):
         super().__init__()
 
         self.config_params = { "d_model": d_model, "warmup_steps": warmup_steps }
 
-        self.d_model = d_model
-        self.d_model = tf.cast(self.d_model, tf.float32)
+        self.d_model = tf.cast(d_model, tf.float32)
 
         self.warmup_steps = warmup_steps
 
@@ -422,21 +420,3 @@ class WarmupLRSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
         arg2 = step * (self.warmup_steps**-1)
 
         return self.max_lr * tf.math.minimum(arg1, arg2)
-
-class F1FromSeqLogits(keras.metrics.F1Score):
-    def update_state(self, y_true, y_pred, **kwargs):
-        y_pred = tf.sigmoid(y_pred)
-        y_true = tf.reshape(y_true, [-1, y_true.shape[-1]])
-        y_pred = tf.reshape(y_pred, [-1, y_pred.shape[-1]])
-        return super().update_state(y_true, y_pred, **kwargs)
-    
-class WeightedBinaryCrossentropy(keras.losses.Loss):
-    def __init__(self, pos_weight, name="weighted_binary_crossentropy", **kwargs):
-        super().__init__(name=name, **kwargs)
-        self.pos_weight = pos_weight
-
-    def get_config(self):
-        return { **super().get_config(), "pos_weight": self.pos_weight }
-
-    def call(self, y_true, y_pred):
-        return weighted_cross_entropy_with_logits(y_true, y_pred, self.pos_weight)

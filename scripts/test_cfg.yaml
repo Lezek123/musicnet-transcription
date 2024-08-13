@@ -1,0 +1,11 @@
+defaults:
+  - config
+  - override dataset/wav_source: synth_midi_to_wav
+  - _self_
+
+dataset:
+  wav_source:
+    min_note: 20
+    max_note: 25
+    notes_std: 10
+    track_length_per_note: 900

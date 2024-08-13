@@ -1,60 +1,51 @@
-from musicnet.utils import Track, get_train_ids, get_test_ids, BrokenMidiException, load_params
-from utils import MidiConvertedTrack, extract_midi_programs, EXTRACTED_MIDI_OUT_DIR, CONVERTED_MIDI_OUT_DIR
+from .utils import extract_midi_programs
 from multiprocessing import Pool
 import os
-import subprocess
-import shutil
+from musicnet.utils import recreate_dirs
+from musicnet.config.dataset.wav_source.MusicNetMidiToWavConfig import MusicNetMidiToWavConfig
+from ..dataset.MusicNetDataset import MusicNetDataset
+from ..dataset.MusicNetConvertedMidiDataset import DATASET_EXTRACTED_MIDI_PATH, DATASET_WAVS_PATH, MusicNetMidiConvertedTrack
+from ..dataset.base import BrokenMidiException
 
-params = load_params(["midi_to_wav.*"])
+def convert(config: MusicNetMidiToWavConfig):
+    mn_dataset = MusicNetDataset()
 
-datasets = {
-    "train": get_train_ids(),
-    # "test": get_test_ids()
-}
+    datasets = {
+        "train": mn_dataset.get_track_ids("train"),
+        "test": mn_dataset.get_track_ids("test")
+    }
 
-if os.path.exists(CONVERTED_MIDI_OUT_DIR):
-    shutil.rmtree(CONVERTED_MIDI_OUT_DIR)
-for ds_name in datasets.keys():
-    os.makedirs(os.path.join(CONVERTED_MIDI_OUT_DIR, ds_name), 0o775, exist_ok=True)
-if params["programs_whitelist"]:
-    if os.path.exists(EXTRACTED_MIDI_OUT_DIR):
-        shutil.rmtree(EXTRACTED_MIDI_OUT_DIR)
-    os.makedirs(EXTRACTED_MIDI_OUT_DIR, 0o775)
+    recreate_dirs([os.path.join(DATASET_WAVS_PATH, ds_name) for ds_name in datasets.keys()])
 
-def obtain_input_path(id):
-    track = Track(id)
-    try:
-        midi = track.read_midi_file()
-    except BrokenMidiException:
-        print("TRACK NOT CONVERTED: BROKEN MIDI FILE", id)
-        return None
-    if params["programs_whitelist"]:
-        filtered_midi, p_in, p_out = extract_midi_programs(midi, params["programs_whitelist"])
-        if len(p_out) == 0:
-            print("TRACK NOT CONVERTED: NO OUTPUT PROGRAMS PRESENT", id)
+    if config.programs_whitelist:
+        recreate_dirs([DATASET_EXTRACTED_MIDI_PATH])
+
+    def prepare_track(id, ds_type):
+        track = mn_dataset.get_track(id, ds_type=ds_type)
+        try:
+            midi = track.read_midi_file()
+        except BrokenMidiException:
+            print("TRACK NOT CONVERTED: BROKEN MIDI FILE", id)
             return None
-        midi_path = os.path.join(EXTRACTED_MIDI_OUT_DIR, f"{id}.midi")
-        filtered_midi.save(midi_path)
-        print(f"Track {id} midi programs successfully extracted! p_in: {len(p_in)}, p_out: {len(p_out)}")
-        return id, midi_path
-    else:
-        return id, track.get_midi_path()
+        if config.programs_whitelist:
+            filtered_midi, p_in, p_out = extract_midi_programs(midi, config.programs_whitelist)
+            if len(p_out) == 0:
+                print("TRACK NOT CONVERTED: NO OUTPUT PROGRAMS PRESENT", id)
+                return None
+            midi_path = os.path.join(DATASET_EXTRACTED_MIDI_PATH, f"{id}.midi")
+            filtered_midi.save(midi_path)
+            print(f"Track {id} midi programs successfully extracted! p_in: {len(p_in)}, p_out: {len(p_out)}")
+            return id
+        else:
+            return id
 
-def convert_track(id, ds_name, input_path):
-    out_file = os.path.join(CONVERTED_MIDI_OUT_DIR, ds_name, f"{id}.wav")
-    subprocess.run(
-        f"fluidsynth -F {out_file} /usr/share/sounds/sf2/default-GM.sf2 {input_path}",
-        shell=True,
-        capture_output=True
-    )
-    if MidiConvertedTrack(id).get_duration() < 1:
-        print("TRACK NOT CONVERTED: UNEXPECTED DURATION", id)
-        os.remove(out_file)
-    else:
+    def convert_track(id, ds_type):
+        track = MusicNetMidiConvertedTrack(id, mn_dataset.metadata, ds_type)
+        track.generate_wav()
         print(f"Track {id} successfully converted to wav...")
 
-with Pool(processes=8) as pool:
-    for ds_name, ds_ids in datasets.items():
-        input_paths = pool.map(obtain_input_path, ds_ids)
-        input_paths = filter(lambda v: v, input_paths)
-        pool.starmap(convert_track, [(id, ds_name, input_path) for id, input_path in input_paths])
+    with Pool(processes=8) as pool:
+        for ds_name, ds_ids in datasets.items():
+            track_ids = pool.map(lambda id: prepare_track(id, ds_name), ds_ids)
+            track_ids = list(filter(lambda id: id, track_ids))
+            pool.starmap(convert_track, [(id, ds_name) for id in track_ids])

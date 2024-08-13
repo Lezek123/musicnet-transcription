@@ -1,26 +1,8 @@
-from musicnet.utils import Track, PROJECT_ROOT_DIR
-import os
 import mido
 from mido import MidiFile, MidiTrack
 import numpy as np
-from glob import glob
 
-BASE_DIR = os.path.join(PROJECT_ROOT_DIR, "data", "preprocessed", "midi_to_wav")
-EXTRACTED_MIDI_OUT_DIR = os.path.join(BASE_DIR, "extracted")
-CONVERTED_MIDI_OUT_DIR = os.path.join(BASE_DIR, "converted")
-
-# Overrides "get_wav_path" and "get_notes" of Track class to allow easy preprocessing
-class MidiConvertedTrack(Track):
-    def get_wav_path(self):
-        return os.path.join(
-            CONVERTED_MIDI_OUT_DIR,
-            self.ds,
-            f"{self._id}.wav"
-        )
-    
-    def get_notes(self):
-        return self.get_norm_midi_notes()
-
+# TODO: Perhaps define as ConvertedMidiTrack method
 def extract_midi_programs(midi: mido.MidiFile, programs_whitelist: list[int]):
     programs = np.ones(shape=(16), dtype=np.int8) * -1
     channels_whitelist = set()
@@ -60,12 +42,3 @@ def extract_midi_programs(midi: mido.MidiFile, programs_whitelist: list[int]):
             skipped_time += msg.time
 
     return filtered_midi, p_in, p_out
-
-
-def list_track_ids(ds_type="train"):
-    return list(map(
-        lambda f: int(f.split("/")[-1].split('.')[0]),
-        glob(os.path.join(CONVERTED_MIDI_OUT_DIR, f"{ds_type}", "*.wav"))
-    ))
-
-get_midi_train_ids = lambda: list_track_ids("train")
