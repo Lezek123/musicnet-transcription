@@ -1,32 +1,55 @@
-from .utils import Preprocessor, PREPROCESSED_DATA_DIR, save_shapes
+from .utils import Preprocessor, save_shapes
 from musicnet.config.dataset.preprocessor import WavChunksTFRecordPreprocessorConfig
-from musicnet.config.dataset.wav_source import WavSourceType
-from ..dataset.base import BaseDataset
-import random
+from musicnet.utils import recreate_dirs
+from ..dataset.base import BaseDataset, PREPROCESSED_DATA_PATH
+from typing import Tuple, Optional
 import tensorflow as tf
 import os
-import shutil
 import numpy as np
 
-def preprocess(config: WavChunksTFRecordPreprocessorConfig, dataset: BaseDataset, wav_source_type: WavSourceType):
-    out_dir = os.path.join(PREPROCESSED_DATA_DIR, wav_source_type.value)
-    if os.path.exists(out_dir):
-        shutil.rmtree(out_dir)
-        os.makedirs(out_dir, 0o775, exist_ok=True)
+def preprocess(
+    config: WavChunksTFRecordPreprocessorConfig,
+    dataset: BaseDataset,
+    ds_name: str,
+    instruments_vocab: dict[int, int],
+    notes_vocab: dict[int, int],
+    split: Optional[Tuple[float, float]]
+):
+    out_dir = os.path.join(PREPROCESSED_DATA_PATH, ds_name)
+    recreate_dirs([out_dir])
 
-    track_ids = dataset.get_track_ids()
-    random.shuffle(track_ids)
+    track_ids = sorted(dataset.get_track_ids())
 
     preprocessor = Preprocessor(
         config.params,
-        notes_vocab=dataset.notes_vocab,
-        instruments_vocab=dataset.instruments_vocab
+        notes_vocab=notes_vocab,
+        instruments_vocab=instruments_vocab
     )
 
     class ChunkIterator:
+        def __init__(self, track_ids: list[int], start_chunk: Optional[int] = None):
+            self.track_ids = track_ids.copy()
+            self.start_chunk = start_chunk
+        
+        def move_to_start_track(self):
+            if not self.start_chunk:
+                return
+            for i in range(0, len(self.track_ids)):
+                track = dataset.get_track(self.track_ids[i])
+                chunks_count = preprocessor.count_chunks(track)
+                if self.current_chunk + chunks_count < start_chunk:
+                    self.current_chunk += chunks_count
+                    print(f"skipped track {id}")
+                else:
+                    self.current_track = i
+                    break
+
         def __iter__(self):
             self.x_chunks: list[np.ndarray] = []
             self.y_chunks: list[np.ndarray] = []
+            self.current_track = 0
+            self.current_chunk = 0
+            self.move_to_start_track()
             return self
 
         def __next__(self):
@@ -38,6 +61,15 @@ def preprocess(config: WavChunksTFRecordPreprocessorConfig, dataset: BaseDataset
 
                 self.x_chunks += list(x_chunks)
                 self.y_chunks += list(y_chunks)
+
+                if self.start_chunk and (self.current_chunk < self.start_chunk):
+                    remaining_to_skip = self.start_chunk - self.current_chunk
+                    self.x_chunks = self.x_chunks[remaining_to_skip:]
+                    self.y_chunks = self.y_chunks[remaining_to_skip:]
+                    self.current_chunk = self.start_chunk
+                    print(f"skipped {remaining_to_skip} chunks from track {id}")
+
+                self.current_chunk += 1
             return self.x_chunks.pop(0), self.y_chunks.pop(0)
         
     total_chunks = 0
@@ -45,6 +77,15 @@ def preprocess(config: WavChunksTFRecordPreprocessorConfig, dataset: BaseDataset
         track = dataset.get_track(id)
         total_chunks += preprocessor.count_chunks(track)
 
+    if split:
+        start_chunk = int(total_chunks * split[0])
+        end_chunk = int(total_chunks * split[1])
+        total_chunks = end_chunk - start_chunk
+        chunks = ChunkIterator(track_ids, start_chunk)
+    else:
+        chunks = ChunkIterator(track_ids)
+
+    print(f"processing {ds_name} set".upper())
     print(f"Total chunks: {total_chunks}")
 
     def serialize(x_chunk, y_chunk):
@@ -59,35 +100,22 @@ def preprocess(config: WavChunksTFRecordPreprocessorConfig, dataset: BaseDataset
         example_proto = tf.train.Example(features=tf.train.Features(feature=feature))
         return example_proto.SerializeToString()
 
-    chunks_iterator = ChunkIterator()
-    # FIXME:
-    # We could also do it inside the loop to prevent
-    # continuation of the train track from entering val set,
-    # but then the chunks count will get messed up
-    chunks = iter(chunks_iterator)
-
-    for ds_type, ds_config in config.ds_split.items():
-        print(f"processing {ds_type} set".upper())
-        ds_size = ds_config.size
-        ds_files = ds_config.file_count
-        if ds_size > 1:
-            chunks_per_file = int(ds_size / ds_files)
-        else:
-            chunks_per_file = int((ds_size * total_chunks) / ds_files)
-        print(f"num files: {ds_files}, chunks per file: {chunks_per_file}")
-        ds_dir = os.path.join(out_dir, ds_type)
-        os.makedirs(ds_dir, 0o775, exist_ok=True)
-        for i in range(0, ds_files):
-            filepath = os.path.join(ds_dir, f"{str(i).zfill(3)}.tfrecord")
-            x_shape, y_shape = None, None
-            with tf.io.TFRecordWriter(filepath) as writer:
-                for _ in range(0, chunks_per_file):
-                    x_chunk, y_chunk = next(chunks)
-                    x_shape, y_shape = x_chunk.shape, y_chunk.shape
-                    serialized = serialize(x_chunk, y_chunk)
-                    writer.write(serialized)
-            print(f"created {filepath}")
-        if x_shape and y_shape:
-            save_shapes(x_shape, y_shape, wav_source_type)
-        print("Done!")
-        print("\n\n")
+    ds_files = config.file_count
+    chunks_per_file = int(total_chunks / ds_files)
+    chunks = iter(chunks)
+    
+    print(f"num files: {ds_files}, chunks per file: {chunks_per_file}")
+    for i in range(0, ds_files):
+        filepath = os.path.join(out_dir, f"{str(i).zfill(3)}.tfrecord")
+        x_shape, y_shape = None, None
+        with tf.io.TFRecordWriter(filepath) as writer:
+            for _ in range(0, chunks_per_file):
+                x_chunk, y_chunk = next(chunks)
+                x_shape, y_shape = x_chunk.shape, y_chunk.shape
+                serialized = serialize(x_chunk, y_chunk)
+                writer.write(serialized)
+        print(f"created {filepath}")
+    if x_shape and y_shape:
+        save_shapes(x_shape, y_shape, ds_name)
+    print("Done!")
+    print("\n\n")

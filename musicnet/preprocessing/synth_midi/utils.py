@@ -1,5 +1,4 @@
 from musicnet.config.dataset.wav_source.SynthMidiToWavConfig import SynthMidiToWavConfig
-from musicnet.preprocessing.dataset.SyntheticMidiDataset import DATASET_MIDIS_PATH
 from mido import MetaMessage, Message, MidiFile, MidiTrack, bpm2tempo
 import os
 import pandas as pd
@@ -93,5 +92,4 @@ class SynthMidiGenerator:
         messages += note_messages
         track = MidiTrack(messages)
         file.tracks.append(track)
-        midi_path = os.path.join(DATASET_MIDIS_PATH, f"{note}.midi")
-        file.save(midi_path)
+        return file

@@ -4,18 +4,14 @@ import numpy as np
 import tensorflow as tf
 import os
 from glob import glob
-from musicnet.utils import PROJECT_ROOT_DIR, IS_CLOUD
+from musicnet.utils import IS_CLOUD
 from numpy.fft import rfftfreq
-import random
 from musicnet.config.dataset.preprocessor.WavChunksTFRecordPreprocessorConfig import (
     WavChunksTFRecordPreprocessorParams,
     WavChunksTFRecordPreprocessorConfig
 )
-from musicnet.config.dataset.wav_source import WavSourceType
-from musicnet.config.dataset.DatasetConfig import DatasetConfig
-from ..dataset.base import BaseTrack
-
-PREPROCESSED_DATA_DIR = os.path.join(PROJECT_ROOT_DIR, "data", "preprocessed", "wav_chunks")
+from musicnet.config.dataset.DatasetConfig import DsConfig
+from ..dataset.base import BaseTrack, PREPROCESSED_DATA_PATH
 
 class Preprocessor():
     def __init__(self, config: WavChunksTFRecordPreprocessorParams, notes_vocab: dict[int, int], instruments_vocab: dict[int, int]):
@@ -106,39 +102,37 @@ def decode_record(record_bytes, x_shape, y_shape):
 
     return (x, y)
 
-def load_shapes(wav_source_type: WavSourceType):
-    x_shape, y_shape = np.load(os.path.join(PREPROCESSED_DATA_DIR, wav_source_type.value, "shapes.npy"))
+def load_shapes(ds_name: str):
+    x_shape, y_shape = np.load(os.path.join(PREPROCESSED_DATA_PATH, ds_name, "shapes.npy"))
     return x_shape, y_shape
 
-def save_shapes(x_shape, y_shape, wav_source_type: WavSourceType):
-    return np.save(os.path.join(PREPROCESSED_DATA_DIR, wav_source_type.value, "shapes.npy"), [x_shape, y_shape])
+def save_shapes(x_shape, y_shape, ds_name: str):
+    return np.save(os.path.join(PREPROCESSED_DATA_PATH, ds_name, "shapes.npy"), [x_shape, y_shape])
 
 def create_tf_record_ds(
-    config: DatasetConfig,
-    ds_type="train",
+    ds_config: DsConfig,
+    ds_name: str,
     num_parallel_reads="auto",
     buffer_size=None,
     shuffle=True
 ):
-    if not isinstance(config.preprocessor, WavChunksTFRecordPreprocessorConfig):
+    if not isinstance(ds_config.preprocessor, WavChunksTFRecordPreprocessorConfig):
         raise Exception("Unsupported preprocessor")
 
-    source_dir = os.path.join(PREPROCESSED_DATA_DIR, config.wav_source.type.value, ds_type)
-    files = glob(os.path.join(source_dir, "*.tfrecord"))
-    if shuffle:
-        random.shuffle(files)
-    files = files[:int(config.load_fraction * len(files))]
+    ds_dir = os.path.join(PREPROCESSED_DATA_PATH, ds_name)
+    files = glob(os.path.join(ds_dir, "*.tfrecord"))
+    files = sorted(files)
 
     if num_parallel_reads == 'auto':
         num_parallel_reads = len(files)
     
     ds = tf.data.TFRecordDataset(files, num_parallel_reads=num_parallel_reads)
     
-    x_shape, y_shape = load_shapes(config.wav_source.type)
+    x_shape, y_shape = load_shapes(ds_name)
     ds = ds.map(lambda r: decode_record(r, x_shape, y_shape))
     if IS_CLOUD:
         ds = ds.cache()
     if shuffle:
         buffer_size = ds.cardinality() if IS_CLOUD else (buffer_size or 1000)
         ds = ds.shuffle(buffer_size)
-    return ds.batch(config.batch_size).prefetch(1)
+    return ds.batch(ds_config.batch_size).prefetch(1)

@@ -1,11 +1,24 @@
 defaults:
   - config
-  - override dataset/wav_source: synth_midi_to_wav
+  - dataset/val/wav_source: synth_midi_to_wav
+  - dataset/test/wav_source: music_net_midi_to_wav
+  - override dataset/default/wav_source: synth_midi_to_wav
   - _self_
 
 dataset:
-  wav_source:
-    min_note: 20
-    max_note: 25
-    notes_std: 10
-    track_length_per_note: 900
+  default:
+    wav_source:
+      min_note: 20
+      max_note: 25
+      notes_std: 10
+      track_length_per_note: 900
+  val:
+    wav_source:
+      min_note: 20
+      max_note: 25
+      notes_std: 10
+      track_length_per_note: 300
+  test:
+    wav_source:
+      mn_ds_type: TEST
+      programs_whitelist: [0]

@@ -10,8 +10,8 @@ from typing import Any
 defaults = [
     "_self_",
     {"model": "cnn"},
-    {"dataset/wav_source": "synth_midi_to_wav"},
-    {"dataset/preprocessor": "wav_chunks_tfrecord"}
+    {"dataset/default/wav_source": "synth_midi_to_wav"},
+    {"dataset/default/preprocessor": "wav_chunks_tfrecord"}
 ]
 
 @dataclass
@@ -27,8 +27,11 @@ cs.store(group="model", name="cnn", node=CNNConfig)
 cs.store(group="model", name="transformer", node=TransformerConfig)
 cs.store(group="model", name="wavenet", node=WaveNetConfig)
 
-cs.store(group="dataset/wav_source", name="music_net_midi_to_wav", node=MusicNetMidiToWavConfig)
-cs.store(group="dataset/wav_source", name="music_net_wav", node=MusicNetWavConfig)
-cs.store(group="dataset/wav_source", name="synth_midi_to_wav", node=SynthMidiToWavConfig)
+# Preprocessors
+cs.store(group=f"dataset/default/preprocessor", name="wav_chunks_tfrecord", node=WavChunksTFRecordPreprocessorConfig)
 
-cs.store(group="dataset/preprocessor", name="wav_chunks_tfrecord", node=WavChunksTFRecordPreprocessorConfig)
+for ds_type in ["default", "train", "val", "test"]:
+    # Wav sources
+    cs.store(group=f"dataset/{ds_type}/wav_source", name="music_net_midi_to_wav", node=MusicNetMidiToWavConfig)
+    cs.store(group=f"dataset/{ds_type}/wav_source", name="music_net_wav", node=MusicNetWavConfig)
+    cs.store(group=f"dataset/{ds_type}/wav_source", name="synth_midi_to_wav", node=SynthMidiToWavConfig)

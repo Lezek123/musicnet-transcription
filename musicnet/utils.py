@@ -11,11 +11,11 @@ def create_vocab(value_set):
     values.sort()
     return { value: index for index, value in enumerate(values) }
 
-def recreate_dirs(dirs):
+def recreate_dirs(dirs: list[str]):
     for dir in dirs:
         if os.path.exists(dir):
             shutil.rmtree(dir)
-        os.makedirs(dir, exist_ok=True)
+        os.makedirs(dir, exist_ok=True, mode=0o775)
 
 # TODO: Adjust
 # def note_frequency(note_idx):

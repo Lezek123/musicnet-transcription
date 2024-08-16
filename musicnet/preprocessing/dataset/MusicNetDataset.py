@@ -1,4 +1,5 @@
-from musicnet.utils import PROJECT_ROOT_DIR, IS_CLOUD, create_vocab
+from musicnet.utils import PROJECT_ROOT_DIR, IS_CLOUD
+from musicnet.config.dataset.wav_source.common import MnDatasetType
 from .base import BaseDataset, BaseTrack
 from dataclasses import dataclass
 from glob import glob
@@ -14,15 +15,16 @@ DATASET_XY_PATH = os.path.join(DATASET_BASE_PATH, "musicnet", "musicnet")
 DATASET_MIDIS_PATH = os.path.join(DATASET_BASE_PATH, "musicnet_midis", "musicnet_midis")
 
 class MusicNetTrack(BaseTrack):
-    def __init__(self, _id: int, metadata: pd.DataFrame, ds_type="train"):
-        self.ds_type = ds_type
+    def __init__(self, _id: int, ds_name: str, metadata: pd.DataFrame, mn_ds_type: MnDatasetType):
+        self.mn_ds_type = mn_ds_type
         self._id = _id
         self.metadata = metadata.loc[_id]
+        super().__init__(_id, ds_name)
     
-    def get_wav_path(self):
-        return os.path.join(DATASET_XY_PATH, f"{self.ds_type}_data", f"{self._id}.wav")
+    def get_wav_path(self) -> str:
+        return os.path.join(DATASET_XY_PATH, f"{self.mn_ds_type.value}_data", f"{self._id}.wav")
     
-    def get_midi_path(self):
+    def get_midi_path(self) -> str:
         pattern = os.path.join(
             DATASET_MIDIS_PATH,
             str(self.metadata["composer"]),
@@ -34,8 +36,8 @@ class MusicNetTrack(BaseTrack):
         else:
             raise Exception(f"Track {self._id} midi file not found!")
 
-    def get_csv_path(self):
-        return os.path.join(DATASET_XY_PATH, f"{self.ds_type}_labels", f"{self._id}.csv")
+    def get_csv_path(self) -> str:
+        return os.path.join(DATASET_XY_PATH, f"{self.mn_ds_type.value}_labels", f"{self._id}.csv")
     
     def get_metadata(self):
         return self.metadata
@@ -59,12 +61,11 @@ class MusicNetTrack(BaseTrack):
     
 @dataclass
 class MusicNetDataset(BaseDataset):
-    def __init__(self):
+    def __init__(self, name: str, mn_ds_type: MnDatasetType):
+        self.mn_ds_type = mn_ds_type
         self.metadata = pd.read_csv(os.path.join(DATASET_BASE_PATH, "musicnet_metadata.csv")).set_index("id")
-        instruments_vocab, notes_vocab = self.load_instruments_and_notes()
-        self.instruments_vocab = instruments_vocab
-        self.notes_vocab = notes_vocab
-        super().__init__(instruments_vocab, notes_vocab)
+        instruments, notes = self.load_instruments_and_notes()
+        super().__init__(name, instruments, notes)
 
     def load_instruments_and_notes(self):
         instruments = set()
@@ -76,13 +77,13 @@ class MusicNetDataset(BaseDataset):
             for n in data["note"].unique():
                 notes.add(n)
 
-        return create_vocab(instruments), create_vocab(notes)
+        return instruments, notes
 
-    def get_track_ids(self, ds_type="train") -> list[int]:
+    def get_track_ids(self) -> list[int]:
         return list(map(
             lambda f: int(f.split("/")[-1].split('.')[0]),
-            glob(os.path.join(DATASET_XY_PATH, f"{ds_type}_labels", "*.csv"))
+            glob(os.path.join(DATASET_XY_PATH, f"{self.mn_ds_type.value}_labels", "*.csv"))
         ))
     
-    def get_track(self, id: int, ds_type="train"):
-        return MusicNetTrack(id, self.metadata, ds_type)
+    def get_track(self, id: int):
+        return MusicNetTrack(id, self.name, self.metadata, self.mn_ds_type)

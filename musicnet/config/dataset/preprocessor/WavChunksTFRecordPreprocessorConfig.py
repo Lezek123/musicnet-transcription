@@ -29,15 +29,7 @@ class WavChunksTFRecordPreprocessorParams:
     spectogram: Optional[SpectogramParams] = field(default_factory=lambda : SpectogramParams())
 
 @dataclass
-class WavChunksTFRecordDatasetSplit:
-    size: int | float
-    file_count: int
-
-@dataclass
 class WavChunksTFRecordPreprocessorConfig(Preprocessor):
     type: PreprocessorType = PreprocessorType.WAV_CHUNKS_TFRECORDS
     params: WavChunksTFRecordPreprocessorParams = field(default_factory=lambda : WavChunksTFRecordPreprocessorParams())
-    ds_split: dict[str, WavChunksTFRecordDatasetSplit] = field(default_factory=lambda : {
-        "train": WavChunksTFRecordDatasetSplit(size=0.8, file_count=20),
-        "val": WavChunksTFRecordDatasetSplit(size=0.2, file_count=20)
-    })
+    file_count: int = 20
