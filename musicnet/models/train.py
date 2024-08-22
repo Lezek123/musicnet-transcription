@@ -1,9 +1,11 @@
 import hydra
 import tensorflow as tf
 import typing
+import os
 from dvclive import Live
 from .utils import get_training_artifacts_dir
 from omegaconf import OmegaConf
+from musicnet.utils import PROJECT_ROOT_DIR
 from musicnet.config.Config import Config
 from musicnet.config.dataset.DatasetConfig import DsConfig
 from musicnet.config.model import CNNConfig, WaveNetConfig, TransformerConfig
@@ -29,7 +31,7 @@ def train_main(cfg: Config) -> None:
 
     model_path, live_path = get_training_artifacts_dir()
 
-    with Live(dir=live_path) as live:
+    with Live(dir=live_path, dvc_file=os.path.join(PROJECT_ROOT_DIR, "dvc.yaml")) as live:
         conf_dict = typing.cast(dict[str, typing.Any], OmegaConf.to_container(cfg, enum_to_str=True))
         live.log_params(conf_dict)
         if isinstance(config.model, CNNConfig):

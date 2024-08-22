@@ -1,3 +1,4 @@
+import numpy as np
 from musicnet.config.dataset.wav_source.common import MnDatasetType
 from .MusicNetDataset import MusicNetDataset, MusicNetTrack
 from .ConvertableMidiTrack import ConvertableMidiTrack
@@ -19,7 +20,7 @@ class MusicNetMidiConvertedDataset(MusicNetDataset):
     def __init__(self, name: str, mn_ds_type: MnDatasetType, programs_whitelist: list[int]):
         super().__init__(name, mn_ds_type)
         self.programs_whitelist = programs_whitelist
-        self.instruments_vocab = { (v+1): k for k, v in enumerate(programs_whitelist) }
+        self.instruments = set(np.array(programs_whitelist) + 1)
 
     def get_track_ids(self) -> list[int]:
         return BaseDataset.get_track_ids(self)

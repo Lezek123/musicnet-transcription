@@ -25,13 +25,15 @@ This approach makes it easier to evaluate:
 - **What are the common mistakes the model makes (for example: distinguishing between notes of similar frequencies, trouble spotting the correct start/end time of the note etc.)**
 - What is the good size of a dataset that allows the model to achieve high accuracy on one-vs-all task. What is the size beyond which there isn't much of an improvement.
 
-3. **Note the conclusions** from 2 (create a document like CONCLUSIONS.md and try to make it short and on-point. You can format it similar to a typical CHANGELOG)
+3. Add more logs to the pipeline (can use dvclive to log images / plots, but also log any relevant information to console)
 
-4. Introduce different instruments and evaluate again. See whether the models still perform well when:
+4. **Note the conclusions** from 2 (create a document like CONCLUSIONS.md and try to make it short and on-point. You can format it similar to a typical CHANGELOG)
+
+5. Introduce different instruments and evaluate again. See whether the models still perform well when:
 - Predicting whether a given note is playing (regardless of an instrument)
 - Predicting whether a given note is being played ON a given instrument (while predicting False if the note is the same but the instrument differs)
 
-5. Based on the conclusions start planning further tasks like:
+6. Based on the conclusions start planning further tasks like:
 - Design a reasonable pipeline for the Google Cloud integration w/ experiment tracking etc.
 - Create a full training dataset which includes:
     - Real audio data from musicnet (possibly)
