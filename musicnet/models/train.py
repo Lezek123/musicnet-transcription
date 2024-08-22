@@ -31,7 +31,7 @@ def train_main(cfg: Config) -> None:
 
     model_path, live_path = get_training_artifacts_dir()
 
-    with Live(dir=live_path, dvc_file=os.path.join(PROJECT_ROOT_DIR, "dvc.yaml")) as live:
+    with Live(dir=live_path, dvcyaml=os.path.join(PROJECT_ROOT_DIR, "dvc.yaml")) as live:
         conf_dict = typing.cast(dict[str, typing.Any], OmegaConf.to_container(cfg, enum_to_str=True))
         live.log_params(conf_dict)
         if isinstance(config.model, CNNConfig):
