@@ -25,7 +25,7 @@ def train_main(cfg: Config) -> None:
     
     ds_infos = get_datasets_info(config)
 
-    datasets: dict[DsName, DsConfig] = {}
+    datasets: dict[DsName, tf.data.Dataset] = {}
     for ds_info in ds_infos:
         datasets[ds_info.name] = create_tf_record_ds(ds_info.config, ds_info.name)
 
@@ -34,6 +34,9 @@ def train_main(cfg: Config) -> None:
     with Live(dir=live_path, dvcyaml=os.path.join(PROJECT_ROOT_DIR, "dvc.yaml")) as live:
         conf_dict = typing.cast(dict[str, typing.Any], OmegaConf.to_container(cfg, enum_to_str=True))
         live.log_params(conf_dict)
+        # Simplified, string version of dataset/model conf
+        live.log_param("dataset_cfg", OmegaConf.to_yaml(config.dataset))
+        live.log_param("model_cfg", OmegaConf.to_yaml(config.model))
         if isinstance(config.model, CNNConfig):
             train_cnn(datasets["train"], datasets["val"], config.model, live, model_path)
         elif isinstance(config.model, TransformerConfig):
