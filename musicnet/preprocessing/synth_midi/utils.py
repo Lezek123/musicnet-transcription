@@ -1,4 +1,5 @@
 from musicnet.config.dataset.wav_source.SynthMidiToWavConfig import SynthMidiToWavConfig
+from musicnet.preprocessing.dataset import BaseTrack
 from mido import MetaMessage, Message, MidiFile, MidiTrack, bpm2tempo
 import os
 import pandas as pd
@@ -93,3 +94,27 @@ class SynthMidiGenerator:
         track = MidiTrack(messages)
         file.tracks.append(track)
         return file
+    
+    def generate_track_metadata(self, track: BaseTrack):
+        playing_notes = np.ones([self.total_ticks, self.max_silmultaneous_notes, 5]) * -1
+        for note in track.get_notes().to_dict("records"):
+            s = int(note["start"] * self.tps)
+            e = int(note["end"] * self.tps)
+            duration = e - s
+            timestep_data = np.array([
+                [[note["note"]]] * duration, # Note being played
+                [[note["velocity"]]] * duration, # Velocity of the note
+                [[duration]] * duration, # Total duration of the note
+                np.arange(1, duration+1).reshape(-1, 1), # How long into the note are we at this time
+                np.arange(duration-1, -1, -1).reshape(-1, 1) # How much time is left until the note finishes 
+            ])
+            playing_notes[s : e, note["channel"]] = np.concatenate(timestep_data, axis=1)
+        playing_notes_df = pd.DataFrame({
+            **{ f"note_{c}": playing_notes[:, c, 0] for c in range(0, self.max_silmultaneous_notes) },
+            **{ f"velocity_{c}": playing_notes[:, c, 1] for c in range(0, self.max_silmultaneous_notes) },
+            **{ f"duration_{c}": playing_notes[:, c, 2] for c in range(0, self.max_silmultaneous_notes) },
+            **{ f"time_playing_{c}": playing_notes[:, c, 3] for c in range(0, self.max_silmultaneous_notes) },
+            **{ f"time_remaining_{c}": playing_notes[:, c, 4] for c in range(0, self.max_silmultaneous_notes) },
+        })
+        playing_notes_df = playing_notes_df.replace(-1.0, None)
+        return playing_notes_df
