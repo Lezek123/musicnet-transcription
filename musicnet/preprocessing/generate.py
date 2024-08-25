@@ -1,8 +1,5 @@
-import hydra
-import typing
 import os
-from musicnet.config.Config import Config
-from omegaconf import OmegaConf
+from musicnet.config import to_config_object, Config
 from musicnet.config.dataset.wav_source import MusicNetWavConfig, MusicNetMidiToWavConfig, SynthMidiToWavConfig
 from .midi_to_wav.convert import convert as convert_mn_midi_to_wav
 from .synth_midi.generate import generate as generate_synth_midi
@@ -10,9 +7,8 @@ from .utils import get_datasets_info
 from musicnet.utils import recreate_dirs
 from .dataset.base import DATA_SOURCES_PATH
 
-@hydra.main(version_base=None, config_name="config")
 def generate(cfg: Config):
-    config = typing.cast(Config, OmegaConf.to_object(cfg))
+    config = to_config_object(cfg)
     datasets_info = get_datasets_info(config)
 
     recreate_dirs([DATA_SOURCES_PATH])
@@ -29,5 +25,3 @@ def generate(cfg: Config):
                 print("Nothing to do, skipping...")
             else:
                 raise Exception("Unrecognized wav_source configuration!")
-    
-generate()

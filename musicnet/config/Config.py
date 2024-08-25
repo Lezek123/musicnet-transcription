@@ -1,3 +1,5 @@
+import typing
+from omegaconf import OmegaConf
 from dataclasses import dataclass, field
 from .dataset.DatasetConfig import DatasetConfig
 from .model import Model, CNNConfig, TransformerConfig, WaveNetConfig
@@ -6,6 +8,7 @@ from .dataset.preprocessor import WavChunksTFRecordPreprocessorConfig
 from hydra.core.config_store import ConfigStore
 from omegaconf import MISSING
 from typing import Any
+from enum import Enum
 
 defaults = [
     "_self_",
@@ -14,8 +17,15 @@ defaults = [
     {"dataset/default/preprocessor": "wav_chunks_tfrecord"}
 ]
 
+class Stage(Enum):
+    GENERATE = "generate"
+    PREPROCESS = "preprocess"
+    TRAIN = "train"
+    EVAL = "eval"
+
 @dataclass
 class Config:
+    stages: list[Stage]
     defaults: list[Any] = field(default_factory=lambda: defaults)
     dataset: DatasetConfig = field(default_factory=lambda : DatasetConfig())
     model: Model = MISSING
@@ -35,3 +45,6 @@ for ds_type in ["default", "train", "val", "test"]:
     cs.store(group=f"dataset/{ds_type}/wav_source", name="music_net_midi_to_wav", node=MusicNetMidiToWavConfig)
     cs.store(group=f"dataset/{ds_type}/wav_source", name="music_net_wav", node=MusicNetWavConfig)
     cs.store(group=f"dataset/{ds_type}/wav_source", name="synth_midi_to_wav", node=SynthMidiToWavConfig)
+
+def to_config_object(cfg: Config) -> Config:
+    return typing.cast(Config, OmegaConf.to_object(cfg))

@@ -101,14 +101,15 @@ class SynthMidiGenerator:
             s = int(note["start"] * self.tps)
             e = int(note["end"] * self.tps)
             duration = e - s
-            timestep_data = np.array([
-                [[note["note"]]] * duration, # Note being played
-                [[note["velocity"]]] * duration, # Velocity of the note
-                [[duration]] * duration, # Total duration of the note
-                np.arange(1, duration+1).reshape(-1, 1), # How long into the note are we at this time
-                np.arange(duration-1, -1, -1).reshape(-1, 1) # How much time is left until the note finishes 
-            ])
-            playing_notes[s : e, note["channel"]] = np.concatenate(timestep_data, axis=1)
+            if duration:
+                timestep_data = np.array([
+                    [[note["note"]]] * duration, # Note being played
+                    [[note["velocity"]]] * duration, # Velocity of the note
+                    [[duration]] * duration, # Total duration of the note
+                    np.arange(1, duration+1).reshape(-1, 1), # How long into the note are we at this time
+                    np.arange(duration-1, -1, -1).reshape(-1, 1) # How much time is left until the note finishes 
+                ])
+                playing_notes[s : e, note["channel"]] = np.concatenate(timestep_data, axis=1)
         playing_notes_df = pd.DataFrame({
             **{ f"note_{c}": playing_notes[:, c, 0] for c in range(0, self.max_silmultaneous_notes) },
             **{ f"velocity_{c}": playing_notes[:, c, 1] for c in range(0, self.max_silmultaneous_notes) },

@@ -1,4 +1,3 @@
-import hydra
 import tensorflow as tf
 import typing
 import os
@@ -6,8 +5,7 @@ from dvclive import Live
 from .utils import get_training_artifacts_dir
 from omegaconf import OmegaConf
 from musicnet.utils import PROJECT_ROOT_DIR
-from musicnet.config.Config import Config
-from musicnet.config.dataset.DatasetConfig import DsConfig
+from musicnet.config import to_config_object, Config
 from musicnet.config.model import CNNConfig, WaveNetConfig, TransformerConfig
 from musicnet.preprocessing.wav_chunks_tfrecord.utils import create_tf_record_ds
 from musicnet.models.cnn.train import train as train_cnn
@@ -16,10 +14,8 @@ from musicnet.models.wavenet.train import train as train_wavenet
 from musicnet.preprocessing.utils import get_datasets_info
 from musicnet.preprocessing.dataset.base import DsName
 
-@hydra.main(version_base=None, config_name="config")
-def train_main(cfg: Config) -> None:
-    config = typing.cast(Config, OmegaConf.to_object(cfg))
-
+def train(cfg: Config) -> None:
+    config = to_config_object(cfg)
     if len(tf.config.list_physical_devices("GPU")) == 0:
         raise Exception("GPU not found")
     
@@ -45,5 +41,3 @@ def train_main(cfg: Config) -> None:
             train_wavenet(datasets["train"], datasets["val"], config.model, live, model_path)
         else:
             raise Exception("Unknown model type")
-        
-train_main()

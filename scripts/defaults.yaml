@@ -21,6 +21,13 @@ dataset:
   test:
     wav_source:
       min_note: 20
-      max_note: 25
+      max_note: 30
       notes_std: 10
       track_length_per_note: 300
+model:
+  n_neurons: 200
+  kernel_size: 3
+  n_layers: 5
+  epochs: 5
+  lr: 0.01
+  activation: GELU
