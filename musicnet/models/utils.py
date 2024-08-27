@@ -1,12 +1,11 @@
 import tensorflow as tf
-import os
 import numpy as np
 from tensorflow import keras
 from tensorflow.nn import weighted_cross_entropy_with_logits # type: ignore
-from musicnet.utils import IS_CLOUD, PROJECT_ROOT_DIR
 from pathlib import Path
-from datetime import datetime
 from tqdm import tqdm
+
+MODEL_PATH = str(Path(__file__).with_name("model.keras"))
 
 class F1FromSeqLogits(keras.metrics.F1Score):
     def update_state(self, y_true, y_pred, **kwargs):
@@ -42,18 +41,6 @@ def get_common_metrics():
         keras.metrics.Precision(0, name="precision"),
         keras.metrics.Recall(0, name="recall")
     ]
-
-# TODO: Setup a remote in the Google Bucket for DVC instead and then pull from there
-def get_training_artifacts_dir():
-    if IS_CLOUD:
-        date_str = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        base_path = f"/gcs/musicnet-ds/jobs/{date_str}"
-        model_path = os.path.join(base_path, "model.keras")
-        live_path = os.path.join(base_path, "dvclive")
-    else:
-        model_path = str(Path(__file__).with_name("model.keras"))
-        live_path = os.path.join(PROJECT_ROOT_DIR, "dvclive")
-    return model_path, live_path
 
 def find_lr(build_model, x, y=None, early_stopping=True):
     print("Searching for best learning rate...")
