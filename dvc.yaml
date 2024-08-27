@@ -5,3 +5,20 @@ metrics:
 plots:
 - dvclive/plots/metrics:
     x: step
+- dvclive/plots/custom/f1_by_class.json:
+    template: bar_horizontal
+    x: f1_score
+    y: note
+    title: F1 score by note
+- dvclive/plots/custom/avg_fp_count_by_silmultaneous_notes_count.json:
+    template: bar_horizontal
+    x: avg_fp
+    y: silmultaneous_notes
+    title: Avg. false positives count by silmultaneous notes count
+- dvclive/plots/sklearn/confusion_matrix.json:
+    template: confusion
+    x: actual
+    y: predicted
+    title: Confusion Matrix
+    x_label: True Label
+    y_label: Predicted Label

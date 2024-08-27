@@ -28,8 +28,8 @@ class PlotsLogger:
         self.live.log_plot(
             "f1_by_class",
             df,
-            x="note",
-            y="f1_score",
+            x="f1_score",
+            y="note",
             template="bar_horizontal",
             title="F1 score by note"
         )
@@ -48,8 +48,8 @@ class PlotsLogger:
         self.live.log_plot(
             "avg_fp_count_by_silmultaneous_notes_count",
             df,
-            x="silmultaneous_notes",
-            y="avg_fp",
+            x="avg_fp",
+            y="silmultaneous_notes",
             template="bar_horizontal",
             title="Avg. false positives count by silmultaneous notes count"
         )
