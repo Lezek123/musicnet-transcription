@@ -82,11 +82,11 @@ class BaseTrack:
         programs = np.ones(shape=(16), dtype=np.int8) * -1
         curr_time = 0
         for msg in mid:
+            curr_time += msg.time
             if msg.is_meta:
                 continue
             if msg.type == "program_change":
                 programs[msg.channel] = int(msg.program)
-            curr_time += msg.time
             if msg.type == "note_on" and msg.velocity > 0:
                 note_start_times[msg.channel][msg.note] = curr_time
                 note_velocities[msg.channel][msg.note] = msg.velocity

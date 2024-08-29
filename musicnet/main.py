@@ -13,7 +13,8 @@ def main(cfg: Config) -> None:
     with Live(
         dir=os.path.join(PROJECT_ROOT_DIR, "dvclive" if cfg.exp else "tmp"),
         save_dvc_exp=cfg.exp,
-        dvcyaml=os.path.join(PROJECT_ROOT_DIR, "dvc.yaml") if cfg.exp else None
+        dvcyaml=os.path.join(PROJECT_ROOT_DIR, "dvc.yaml") if cfg.exp else None,
+        resume=cfg.resume 
     ) as live:
         if Stage.GENERATE in cfg.stages:
             generate(cfg)

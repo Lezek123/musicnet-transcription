@@ -25,8 +25,9 @@ class Stage(Enum):
 
 @dataclass
 class Config:
-    exp: bool
     stages: list[Stage]
+    exp: bool
+    resume: bool = False
     defaults: list[Any] = field(default_factory=lambda: defaults)
     dataset: DatasetConfig = field(default_factory=lambda : DatasetConfig())
     model: Model = MISSING
