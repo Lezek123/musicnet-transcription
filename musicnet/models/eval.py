@@ -1,6 +1,8 @@
 import numpy as np
 import tensorflow as tf
 import pandas as pd
+import seaborn as sns
+from matplotlib import pyplot as plt
 from dvclive import Live
 from tensorflow import keras
 from musicnet.config import to_config_object, Config
@@ -35,7 +37,7 @@ class AverageFpByLabelsCount(tf.keras.metrics.Metric):
         super().__init__(name=name, **kwargs)
         self.threshold = threshold
         self.max_labels = max_labels
-        # [indices_count, fp_count] for each label_count
+        # [label_count, [indices_count, fp_count]] for each label_count between 0 and max_labels
         self.counters = self.add_weight(
             shape=(max_labels + 1, 2),
             initializer='zeros',
@@ -53,30 +55,36 @@ class AverageFpByLabelsCount(tf.keras.metrics.Metric):
             self.counters[s, :].assign(self.counters[s, :] + [indices_count, fp_count])
 
     def reset_state(self):
-        self.counters.assign(tf.zeros_like(self.counters))
+        for v in self.variables:
+            v.assign(tf.zeros(v.shape, dtype=v.dtype))
 
     def result(self):
         return self.counters[:, 1] / self.counters[:, 0]
     
 class FpConfMatrix(tf.keras.metrics.Metric):
-    def __init__(self, size: int, threshold = 0., name='f1_conf_matrix', **kwargs):
+    def __init__(self, threshold = 0., name='f1_conf_matrix', **kwargs):
         super().__init__(name=name, **kwargs)
-        self.size = size
         self.threshold = threshold
+        self.built = False
+
+    def build(self, y_true_shape):
         # Shape: (num_classes, num_classes, 2)
-        # (true_label, pred_label, 0) is the total count of examples in y_true for which example[true_label] == True and example[pred_label] == False
-        # (true_label, pred_label, 1) is the total count of pred_label false positives for given true_label
+        # [true_label, pred_label, 0] is the total count of examples in y_true for which example[true_label] == True and example[pred_label] == False
+        # [true_label, pred_label, 1] is the total count of pred_label false positives for given true_label
         self.counters = self.add_weight(
-            shape=(self.size, self.size, 2),
+            shape=(y_true_shape[-1], y_true_shape[-1], 2),
             initializer='zeros',
             name='counters',
             dtype=tf.float32
         )
+        self.built = True
         
     def update_state(self, y_true, y_pred, sample_weight=None):
+        if not self.built:
+            self.build(y_true.shape)
         y_true = tf.reshape(y_true, (-1, y_true.shape[-1]))
         y_pred = tf.reshape(y_pred, (-1, y_pred.shape[-1]))
-        for i in range(0, self.size):
+        for i in range(0, y_true.shape[-1]):
             indices = y_true[:, i] == True
             # Shape: (num_classes,)
             total_count = tf.reduce_sum(
@@ -91,10 +99,54 @@ class FpConfMatrix(tf.keras.metrics.Metric):
             self.counters[i, :, 1].assign(self.counters[i, :, 1] + fp_count)
 
     def reset_state(self):
-        self.counters.assign(tf.zeros_like(self.counters))
+        for v in self.variables:
+            v.assign(tf.zeros(v.shape, dtype=v.dtype))
         
     def result(self):
         return self.counters[:, :, 1] / self.counters[:, :, 0]
+    
+# Calculates total count of true_positives, false_positives and false_negatives for each class
+class PerClassStats(tf.keras.metrics.Metric):
+    def __init__(self, threshold = 0., name='per_class_stats', **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.threshold = threshold
+        self.built = False
+
+    def build(self, y_true_shape):
+        # Shape: (3, num_classes)
+        # [i, class_idx] is TP for i=0, FP for i=1, FN for i=2
+        self.counters = self.add_weight(
+            shape=(3, y_true_shape[-1]),
+            initializer='zeros',
+            name='counters',
+            dtype=tf.int32
+        )
+        self.built = True
+        
+    def update_state(self, y_true, y_pred, sample_weight=None):
+        if not self.built:
+            self.build(y_true.shape)
+        y_true = tf.reshape(y_true, (-1, y_true.shape[-1]))
+        y_pred = tf.reshape(y_pred, (-1, y_pred.shape[-1]))
+        # True positives
+        self.counters[0].assign(
+            self.counters[0] + tf.reduce_sum(tf.cast((y_true == True) & (y_pred >= self.threshold), tf.int32), axis=0)
+        )
+        # False positives
+        self.counters[1].assign(
+            self.counters[1] + tf.reduce_sum(tf.cast((y_true == False) & (y_pred >= self.threshold), tf.int32), axis=0)
+        )
+        # False negatives
+        self.counters[2].assign(
+            self.counters[2] + tf.reduce_sum(tf.cast((y_true == True) & (y_pred < self.threshold), tf.int32), axis=0)
+        )
+
+    def reset_state(self):
+        for v in self.variables:
+            v.assign(tf.zeros(v.shape, dtype=v.dtype))
+        
+    def result(self):
+        return self.counters
 
 @dataclass
 class PlotsLogger:
@@ -152,6 +204,17 @@ class PlotsLogger:
             title=f"{self.ds_name.upper()}: Confusion matrix of false positives (unit: 1/{10**precision})"
         )
 
+    def tp_fp_fn_by_note_plot(self, data):
+        counts = pd.DataFrame({
+            "note": list(self.notes_vocab.keys()) * 3,
+            "metric": np.repeat(["tp", "fp", "fn"], len(self.notes_vocab)),
+            "value": np.concatenate(data, axis=0)
+        })
+
+        fig = plt.figure(figsize=(10, 25))
+        sns.barplot(counts, x="value", y="note", hue="metric", orient="y", ax=plt.gca())
+        self.live.log_image(f"{self.ds_name}/tp_fp_fn_by_note_plot.png", fig)
+
 def eval(cfg: Config, live: Live) -> None:
     config = to_config_object(cfg)
     ds_infos = get_datasets_info(config)
@@ -175,18 +238,20 @@ def eval(cfg: Config, live: Live) -> None:
     plot_metrics = [
         F1FromSeqLogits(average=None, threshold=0.5),
         AverageFpByLabelsCount(max_labels=max_labels),
-        FpConfMatrix(len(notes_vocab))
+        FpConfMatrix(),
+        PerClassStats()
     ]
     model.compile(metrics=plot_metrics)
 
     for ds_name, ds in datasets.items():
-        _, f1_by_class, avg_fp_by_labels_count, fp_conf_matrix = model.evaluate(ds)
+        _, f1_by_class, avg_fp_by_labels_count, fp_conf_matrix, per_class_stats = model.evaluate(ds)
 
         logger = PlotsLogger(ds_name, live, notes_vocab)
 
         logger.log_f1_by_class_plot(np.nan_to_num(f1_by_class))
         logger.log_average_fp_count_by_silmultaneous_notes_count(np.nan_to_num(avg_fp_by_labels_count))
         logger.log_fp_confusion_matrix_plot(np.nan_to_num(fp_conf_matrix))
+        logger.tp_fp_fn_by_note_plot(np.nan_to_num(per_class_stats))
     
     # TODO: Establish what kind of metrics I want to have here:
     # - bar plot of precision/f1 grouped by individual notes

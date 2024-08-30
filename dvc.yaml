@@ -5,6 +5,7 @@ metrics:
 plots:
 - dvclive/plots/metrics:
     x: step
+- dvclive/plots/images
 - dvclive/plots/custom/val/f1_by_class.json:
     template: bar_horizontal
     x: f1_score
