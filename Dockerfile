@@ -1,6 +1,6 @@
 FROM europe-docker.pkg.dev/vertex-ai/training/tf-gpu.2-14.py310:latest
 
-WORKDIR /musicnet
+WORKDIR /
 
 RUN pip install librosa mido dvclive pandas seaborn
 RUN apt-get update -y
@@ -10,4 +10,6 @@ RUN git config --global user.email "gc@example.com"
 
 ENV PYTHONPATH=/musicnet
 ENV MN_DS_PATH=/gcs/musicnet-ds/MusicNet
-# ENTRYPOINT ["musicnet/models/transformer/pipeline.sh"]
+
+ENTRYPOINT ["/bin/sh", "-c"]
+CMD ["git clone https://github.com/Lezek123/musicnet-transcription.git musicnet && ./musicnet/scripts/gc_run.sh"]

@@ -15,6 +15,7 @@ fi
 
 docker run \
     $FLAGS \
-    -v $DS_DIR:/musicnet/data/MusicNet \
+    -v $DS_DIR:/data \
     --gpus all \
+    -e MN_DS_PATH=/data \
     europe-west4-docker.pkg.dev/machine-learning-429020/musicnet/musicnet

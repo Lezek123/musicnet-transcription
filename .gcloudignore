@@ -1,6 +1,4 @@
-data/MusicNet
-data/preprocessed/midi_to_wav/**
-data/preprocessed/wav_specs_and_notes/**
+data
 .venv
 .dvc
 .git
