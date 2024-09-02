@@ -1,7 +1,7 @@
 #!/bin/sh
 
 jupyter nbconvert --clear-output --inplace notebooks/*.ipynb
-if [ -z "$(git status --porcelain=v1 | grep "M  " | grep ipynb)" ]; then
+if ! [ -z "$(git status --porcelain=v1 | grep "M  " | grep ipynb)" ]; then
     echo "Some unstaged changes in Jupyter notebooks detected after clearing output. Aborting..."
     exit 1
 fi

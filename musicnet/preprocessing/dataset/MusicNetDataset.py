@@ -6,11 +6,7 @@ from glob import glob
 import os
 import pandas as pd
 
-if IS_CLOUD:
-    DATASET_BASE_PATH = "/gcs/musicnet-ds/MusicNet"
-else:
-    DATASET_BASE_PATH = os.path.join(PROJECT_ROOT_DIR, "data", "MusicNet")
-
+DATASET_BASE_PATH = os.environ["MN_DS_PATH"]
 DATASET_XY_PATH = os.path.join(DATASET_BASE_PATH, "musicnet", "musicnet")
 DATASET_MIDIS_PATH = os.path.join(DATASET_BASE_PATH, "musicnet_midis", "musicnet_midis")
 

@@ -8,6 +8,10 @@ set -x
 
 # TODO: Setup a remote for DVC
 
+set -a
+. ../.env
+set +a
+
 python3 -m musicnet.main $FLAGS\
         --config-path="$SCRIPT_PATH" \
         --config-name=defaults \
