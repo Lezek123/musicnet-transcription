@@ -6,3 +6,4 @@ dvclive
 scripts/outputs
 outputs
 tmp
+.git-credentials
