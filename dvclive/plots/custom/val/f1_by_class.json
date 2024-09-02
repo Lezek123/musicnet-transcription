@@ -1,0 +1,342 @@
+[
+    {
+        "note": 20,
+        "f1_score": 0.8425572514533997
+    },
+    {
+        "note": 21,
+        "f1_score": 0.8729482293128967
+    },
+    {
+        "note": 22,
+        "f1_score": 0.8671997785568237
+    },
+    {
+        "note": 23,
+        "f1_score": 0.8572559356689453
+    },
+    {
+        "note": 24,
+        "f1_score": 0.83315110206604
+    },
+    {
+        "note": 25,
+        "f1_score": 0.0
+    },
+    {
+        "note": 26,
+        "f1_score": 0.0
+    },
+    {
+        "note": 27,
+        "f1_score": 0.0
+    },
+    {
+        "note": 28,
+        "f1_score": 0.0
+    },
+    {
+        "note": 29,
+        "f1_score": 0.0
+    },
+    {
+        "note": 30,
+        "f1_score": 0.0
+    },
+    {
+        "note": 31,
+        "f1_score": 0.0
+    },
+    {
+        "note": 32,
+        "f1_score": 0.0
+    },
+    {
+        "note": 33,
+        "f1_score": 0.0
+    },
+    {
+        "note": 34,
+        "f1_score": 0.0
+    },
+    {
+        "note": 35,
+        "f1_score": 0.0
+    },
+    {
+        "note": 36,
+        "f1_score": 0.0
+    },
+    {
+        "note": 37,
+        "f1_score": 0.0
+    },
+    {
+        "note": 38,
+        "f1_score": 0.0
+    },
+    {
+        "note": 39,
+        "f1_score": 0.0
+    },
+    {
+        "note": 40,
+        "f1_score": 0.0
+    },
+    {
+        "note": 41,
+        "f1_score": 0.0
+    },
+    {
+        "note": 42,
+        "f1_score": 0.0
+    },
+    {
+        "note": 43,
+        "f1_score": 0.0
+    },
+    {
+        "note": 44,
+        "f1_score": 0.0
+    },
+    {
+        "note": 45,
+        "f1_score": 0.0
+    },
+    {
+        "note": 46,
+        "f1_score": 0.0
+    },
+    {
+        "note": 47,
+        "f1_score": 0.0
+    },
+    {
+        "note": 48,
+        "f1_score": 0.0
+    },
+    {
+        "note": 49,
+        "f1_score": 0.0
+    },
+    {
+        "note": 50,
+        "f1_score": 0.0
+    },
+    {
+        "note": 51,
+        "f1_score": 0.0
+    },
+    {
+        "note": 52,
+        "f1_score": 0.0
+    },
+    {
+        "note": 53,
+        "f1_score": 0.0
+    },
+    {
+        "note": 54,
+        "f1_score": 0.0
+    },
+    {
+        "note": 55,
+        "f1_score": 0.0
+    },
+    {
+        "note": 56,
+        "f1_score": 0.0
+    },
+    {
+        "note": 57,
+        "f1_score": 0.0
+    },
+    {
+        "note": 58,
+        "f1_score": 0.0
+    },
+    {
+        "note": 59,
+        "f1_score": 0.0
+    },
+    {
+        "note": 60,
+        "f1_score": 0.0
+    },
+    {
+        "note": 61,
+        "f1_score": 0.0
+    },
+    {
+        "note": 62,
+        "f1_score": 0.0
+    },
+    {
+        "note": 63,
+        "f1_score": 0.0
+    },
+    {
+        "note": 64,
+        "f1_score": 0.0
+    },
+    {
+        "note": 65,
+        "f1_score": 0.0
+    },
+    {
+        "note": 66,
+        "f1_score": 0.0
+    },
+    {
+        "note": 67,
+        "f1_score": 0.0
+    },
+    {
+        "note": 68,
+        "f1_score": 0.0
+    },
+    {
+        "note": 69,
+        "f1_score": 0.0
+    },
+    {
+        "note": 70,
+        "f1_score": 0.0
+    },
+    {
+        "note": 71,
+        "f1_score": 0.0
+    },
+    {
+        "note": 72,
+        "f1_score": 0.0
+    },
+    {
+        "note": 73,
+        "f1_score": 0.0
+    },
+    {
+        "note": 74,
+        "f1_score": 0.0
+    },
+    {
+        "note": 75,
+        "f1_score": 0.0
+    },
+    {
+        "note": 76,
+        "f1_score": 0.0
+    },
+    {
+        "note": 77,
+        "f1_score": 0.0
+    },
+    {
+        "note": 78,
+        "f1_score": 0.0
+    },
+    {
+        "note": 79,
+        "f1_score": 0.0
+    },
+    {
+        "note": 80,
+        "f1_score": 0.0
+    },
+    {
+        "note": 81,
+        "f1_score": 0.0
+    },
+    {
+        "note": 82,
+        "f1_score": 0.0
+    },
+    {
+        "note": 83,
+        "f1_score": 0.0
+    },
+    {
+        "note": 84,
+        "f1_score": 0.0
+    },
+    {
+        "note": 85,
+        "f1_score": 0.0
+    },
+    {
+        "note": 86,
+        "f1_score": 0.0
+    },
+    {
+        "note": 87,
+        "f1_score": 0.0
+    },
+    {
+        "note": 88,
+        "f1_score": 0.0
+    },
+    {
+        "note": 89,
+        "f1_score": 0.0
+    },
+    {
+        "note": 90,
+        "f1_score": 0.0
+    },
+    {
+        "note": 91,
+        "f1_score": 0.0
+    },
+    {
+        "note": 92,
+        "f1_score": 0.0
+    },
+    {
+        "note": 93,
+        "f1_score": 0.0
+    },
+    {
+        "note": 94,
+        "f1_score": 0.0
+    },
+    {
+        "note": 95,
+        "f1_score": 0.0
+    },
+    {
+        "note": 96,
+        "f1_score": 0.0
+    },
+    {
+        "note": 97,
+        "f1_score": 0.0
+    },
+    {
+        "note": 98,
+        "f1_score": 0.0
+    },
+    {
+        "note": 99,
+        "f1_score": 0.0
+    },
+    {
+        "note": 100,
+        "f1_score": 0.0
+    },
+    {
+        "note": 101,
+        "f1_score": 0.0
+    },
+    {
+        "note": 102,
+        "f1_score": 0.0
+    },
+    {
+        "note": 103,
+        "f1_score": 0.0
+    },
+    {
+        "note": 104,
+        "f1_score": 0.0
+    }
+]
