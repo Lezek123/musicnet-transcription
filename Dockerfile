@@ -3,7 +3,7 @@ FROM europe-docker.pkg.dev/vertex-ai/training/tf-gpu.2-14.py310:latest
 WORKDIR /
 
 COPY .git-credentials /root/.git-credentials
-RUN git config --global credential.helper credential-store
+RUN git config --global credential.helper store
 RUN pip install librosa mido dvclive pandas seaborn
 RUN apt-get update -y
 RUN apt-get install -y fluidsynth
