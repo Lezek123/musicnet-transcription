@@ -1,13 +1,15 @@
 workerPoolSpecs:
   machineSpec:
+    # https://cloud.google.com/skus/?hl=en&filter=g2%20vertex%20training%20west4&currency=USD
+    # https://cloud.google.com/compute/docs/gpus#l4-gpus
+    # According to the docs above the price per hour is:
+    # 4 cores * 0.358 = $ 0.1432 / hr
+    # 16 MB RAM * 0.0042 = $ 0.0672 / hr
+    # SUM: $0.2104 / hr
+    machineType: g2-standard-4 #n1-highmem-8 
     # https://cloud.google.com/vertex-ai/pricing#training
-    # https://cloud.google.com/compute/docs/general-purpose-machines#n1_machines
-    # This one has 8 vCPUs, 52 GB of RAM and costs $0.6 / hr (in eu-west4)
-    # We can cache the entire dataset in RAM which may speed up the training and allow full shuffling
-    machineType: n1-highmem-8
-    # https://cloud.google.com/vertex-ai/pricing#training
-    # NVidia Tesla T4 costs $0.4025 / hr and has 16 GB of memory
-    acceleratorType: NVIDIA_TESLA_T4
+    # NVidia L4 costs $0.709 / hr and has 24 GB of memory
+    acceleratorType: NVIDIA_L4
     acceleratorCount: 1
     # For disk spec we'll use the default 100 GB PD-SSD which costs a negible amount ($0.03 / hr)
     # https://cloud.google.com/vertex-ai/docs/reference/rest/v1beta1/DiskSpec
