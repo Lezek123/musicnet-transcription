@@ -1,0 +1,30 @@
+[
+    {
+        "silmultaneous_notes": 0,
+        "avg_fp": 0.39935439825057983
+    },
+    {
+        "silmultaneous_notes": 1,
+        "avg_fp": 1.1296635866165161
+    },
+    {
+        "silmultaneous_notes": 2,
+        "avg_fp": 1.3598295450210571
+    },
+    {
+        "silmultaneous_notes": 3,
+        "avg_fp": 1.721225380897522
+    },
+    {
+        "silmultaneous_notes": 4,
+        "avg_fp": 1.5776922702789307
+    },
+    {
+        "silmultaneous_notes": 5,
+        "avg_fp": 2.2961783409118652
+    },
+    {
+        "silmultaneous_notes": 6,
+        "avg_fp": 3.799522638320923
+    }
+]

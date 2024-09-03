@@ -1,0 +1,91 @@
+stages:
+- GENERATE
+- PREPROCESS
+- TRAIN
+- EVAL
+exp: true
+resume: false
+dataset:
+  default:
+    wav_source:
+      type: SYNTH_MIDI_TO_WAV
+      tps: 100
+      min_note_ticks: 1
+      max_note_ticks: 100
+      max_silmultaneous_notes: 3
+      sidechannel_sparsity: 1
+      min_note: 20
+      max_note: 25
+      notes_std: 5
+      track_length_per_note: 300
+      velocity_min: 64
+      velocity_max: 127
+    preprocessor:
+      type: WAV_CHUNKS_TFRECORDS
+      params:
+        chunk_size_sec: 10
+        chunk_shift_sec: 5
+        target_sr: 44100
+        note_rounding: 0.01
+        spectogram:
+          n_fft: 2205
+          hop_length: 441
+          min_hz: 0
+          n_filters: 200
+          unit: DECIBELS
+      file_count: 5
+    batch_size: 8
+    split:
+  train:
+  val:
+    wav_source:
+      type: SYNTH_MIDI_TO_WAV
+      tps: 100
+      min_note_ticks: 1
+      max_note_ticks: 100
+      max_silmultaneous_notes: 3
+      sidechannel_sparsity: 1
+      min_note: 20
+      max_note: 25
+      notes_std: 5
+      track_length_per_note: 100
+      velocity_min: 64
+      velocity_max: 127
+    batch_size:
+    split:
+  test:
+    wav_source:
+      type: MUSICNET_MIDI_TO_WAV
+      mn_ds_type: TEST
+      programs_whitelist:
+      - 0
+    batch_size:
+    split:
+model:
+  type: CNN
+  n_layers: 5
+  n_neurons: 200
+  activation: GELU
+  kernel_size: 5
+  epochs: 10
+  lr: AUTO
+  dropout_rate: 0.0
+  conv_type: SEPARABLE
+dataset_cfg: "default:\n  wav_source:\n    type: SYNTH_MIDI_TO_WAV\n    tps: 100\n\
+  \    min_note_ticks: 1\n    max_note_ticks: 100\n    max_silmultaneous_notes: 3\n\
+  \    sidechannel_sparsity: 1\n    min_note: 20\n    max_note: 25\n    notes_std:
+  5\n    track_length_per_note: 300\n    velocity_min: 64\n    velocity_max: 127\n\
+  \  preprocessor:\n    type: WAV_CHUNKS_TFRECORDS\n    params:\n      chunk_size_sec:
+  10\n      chunk_shift_sec: 5\n      target_sr: 44100\n      note_rounding: 0.01\n\
+  \      spectogram:\n        n_fft: 2205\n        hop_length: 441\n        min_hz:
+  0\n        n_filters: 200\n        unit: DECIBELS\n    file_count: 5\n  batch_size:
+  8\n  split: null\ntrain: null\nval:\n  wav_source:\n    type: SYNTH_MIDI_TO_WAV\n\
+  \    tps: 100\n    min_note_ticks: 1\n    max_note_ticks: 100\n    max_silmultaneous_notes:
+  3\n    sidechannel_sparsity: 1\n    min_note: 20\n    max_note: 25\n    notes_std:
+  5\n    track_length_per_note: 100\n    velocity_min: 64\n    velocity_max: 127\n\
+  \  batch_size: null\n  split: null\ntest:\n  wav_source:\n    type: MUSICNET_MIDI_TO_WAV\n\
+  \    mn_ds_type: TEST\n    programs_whitelist:\n    - 0\n  batch_size: null\n  split:
+  null\n"
+model_cfg: "type: CNN\nn_layers: 5\nn_neurons: 200\nactivation: GELU\nkernel_size:
+  5\nepochs: 10\nlr: AUTO\ndropout_rate: 0.0\nconv_type: SEPARABLE\n"
+lr: 0.01
