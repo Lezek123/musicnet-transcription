@@ -9,7 +9,6 @@ COMMAND=$1
 CONTAINER_IMAGE_URI="europe-west4-docker.pkg.dev/machine-learning-429020/musicnet/musicnet"
 BUILD_LOCATION="europe-west1"
 JOB_LOCATION="europe-west4"
-JOB_NAME="Test job 1"
 
 if [[ "$COMMAND" == "build" ]]; then
   # 1. Build the image on Google Cloud
@@ -20,6 +19,11 @@ if [[ "$COMMAND" == "build" ]]; then
       --region=$BUILD_LOCATION \
       --tag $CONTAINER_IMAGE_URI
 elif [[ "$COMMAND" == "create" ]]; then
+  JOB_NAME=$2
+  if [ -z "$JOB_NAME" ]; then
+    echo "Missing job name"
+    exit 1
+  fi
   # 2. Create the custom job
   gcloud ai custom-jobs create \
     --region=$JOB_LOCATION \
