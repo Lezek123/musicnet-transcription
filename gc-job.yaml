@@ -3,10 +3,10 @@ workerPoolSpecs:
     # https://cloud.google.com/skus/?hl=en&filter=g2%20vertex%20training%20west4&currency=USD
     # https://cloud.google.com/compute/docs/gpus#l4-gpus
     # According to the docs above the price per hour is:
-    # 4 cores * 0.358 = $ 0.1432 / hr
-    # 16 MB RAM * 0.0042 = $ 0.0672 / hr
-    # SUM: $0.2104 / hr
-    machineType: g2-standard-4 #n1-highmem-8 
+    # 8 cores * 0.0358 = $ 0.2864 / hr
+    # 32 MB RAM * 0.0042 = $ 0.1344 / hr
+    # SUM: $0.4208 / hr
+    machineType: g2-standard-8
     # https://cloud.google.com/vertex-ai/pricing#training
     # NVidia L4 costs $0.709 / hr and has 24 GB of memory
     acceleratorType: NVIDIA_L4

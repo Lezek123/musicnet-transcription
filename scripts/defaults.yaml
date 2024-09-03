@@ -8,28 +8,31 @@ defaults:
 dataset:
   default:
     preprocessor:
-      file_count: 5
+      file_count: 20
     wav_source:
       min_note: 20
-      max_note: 25
-      notes_std: 5
-      track_length_per_note: 300
-      max_silmultaneous_notes: 3
+      max_note: 105
+      notes_std: 15
+      track_length_per_note: 1800
+      max_silmultaneous_notes: 9
+      sidechannel_sparsity: 2
   val:
     wav_source:
       min_note: 20
-      max_note: 25
-      notes_std: 5
-      track_length_per_note: 100
-      max_silmultaneous_notes: 3
+      max_note: 105
+      notes_std: 15
+      track_length_per_note: 300
+      max_silmultaneous_notes: 9
+      sidechannel_sparsity: 1
   test:
+    split: [0, 0.2]
     wav_source:
-      mn_ds_type: TEST
+      mn_ds_type: TRAIN
       programs_whitelist: [0]
 model:
-  n_neurons: 200
+  n_neurons: 4000
   kernel_size: 5
   n_layers: 5
-  epochs: 10
+  epochs: 100
   # lr: 0.0025
   activation: GELU

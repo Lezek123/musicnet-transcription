@@ -12,6 +12,7 @@ from musicnet.config.dataset.preprocessor.WavChunksTFRecordPreprocessorConfig im
 )
 from musicnet.config.dataset.DatasetConfig import DsConfig
 from ..dataset.base import BaseTrack, PREPROCESSED_DATA_PATH
+import psutil
 
 class Preprocessor():
     def __init__(self, config: WavChunksTFRecordPreprocessorParams, notes_vocab: dict[int, int], instruments_vocab: dict[int, int]):
@@ -130,9 +131,22 @@ def create_tf_record_ds(
     
     x_shape, y_shape = load_shapes(ds_name)
     ds = ds.map(lambda r: decode_record(r, x_shape, y_shape))
-    if IS_CLOUD:
+
+    buffer_size = buffer_size or 0.25
+
+    if type(buffer_size) == float:
+        record_size = (np.prod(x_shape) + np.prod(y_shape)) * 32
+        available_mem = psutil.virtual_memory().available
+        buffer_size = int((buffer_size * available_mem) / record_size)
+
+    if os.environ.get("DS_CACHE") == "true":
+        print("DS_CACHE enabled")
         ds = ds.cache()
+        buffer_size = ds.cardinality()
+
+    print(f"{ds_name} dataset buffer size: {buffer_size}")
+
     if shuffle:
-        buffer_size = ds.cardinality() if IS_CLOUD else (buffer_size or 1000)
         ds = ds.shuffle(buffer_size)
+
     return ds.batch(ds_config.batch_size).prefetch(1)
