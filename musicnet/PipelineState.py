@@ -20,8 +20,8 @@ class StoredPipelineState():
 
 class PipelineState():
     state_file_path = os.path.join(STATE_DIR, "pipeline.pkl")
-    current_stage: Stage
-    stage_state: StageState
+    current_stage: Stage = Stage.GENERATE
+    stage_state: StageState = StageState.CLEAN
 
     def __init__(self, config: Config):
         self.config = config
