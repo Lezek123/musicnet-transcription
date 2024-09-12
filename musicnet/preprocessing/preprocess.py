@@ -1,12 +1,20 @@
+import os
 from musicnet.preprocessing.utils import load_source_dataset, get_datasets_info, load_vocabs
-from musicnet.config import to_config_object, Config
+from musicnet.config import Config
 from musicnet.config.dataset.preprocessor import WavChunksTFRecordPreprocessorConfig
 from musicnet.preprocessing.wav_chunks_tfrecord.preprocess import preprocess as wav_chunks_preprocess
+from musicnet.PipelineState import PipelineState, StageState
+from musicnet.utils import recreate_dirs
+from .dataset.base import PREPROCESSED_DATA_PATH
 
-def preprocess(cfg: Config):
-    config = to_config_object(cfg)
+def preprocess(config: Config, ps: PipelineState):
     ds_infos = get_datasets_info(config)
     instruments_vocab, notes_vocab = load_vocabs(config)
+
+    if ps.stage_state == StageState.CLEAN:
+        recreate_dirs([os.path.join(PREPROCESSED_DATA_PATH, dsi.name) for dsi in ds_infos])
+    
+    ps.set_stage_state(StageState.IN_PROGRESS)
 
     for ds_info in ds_infos:
         dataset = load_source_dataset(ds_info.config, ds_info.src_name)

@@ -103,12 +103,15 @@ def decode_record(record_bytes, x_shape, y_shape):
 
     return (x, y)
 
+def shapes_file_path(ds_name: str):
+    return os.path.join(PREPROCESSED_DATA_PATH, ds_name, "shapes.npy")
+
 def load_shapes(ds_name: str):
-    x_shape, y_shape = np.load(os.path.join(PREPROCESSED_DATA_PATH, ds_name, "shapes.npy"))
+    x_shape, y_shape = np.load(shapes_file_path(ds_name))
     return x_shape, y_shape
 
 def save_shapes(x_shape, y_shape, ds_name: str):
-    return np.save(os.path.join(PREPROCESSED_DATA_PATH, ds_name, "shapes.npy"), [x_shape, y_shape])
+    return np.save(shapes_file_path(ds_name), [x_shape, y_shape])
 
 def create_tf_record_ds(
     ds_config: DsConfig,

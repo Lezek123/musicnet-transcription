@@ -1,11 +1,26 @@
 import tensorflow as tf
 import numpy as np
+import os
 from tensorflow import keras
 from tensorflow.nn import weighted_cross_entropy_with_logits # type: ignore
 from pathlib import Path
 from tqdm import tqdm
+from dvclive.keras import DVCLiveCallback
 
 MODEL_PATH = str(Path(__file__).with_name("model.keras"))
+CHECKPOINT_DIR = str(Path(__file__).with_name("checkpoint"))
+CHECKPOINT_MODEL_PATH = os.path.join(CHECKPOINT_DIR, "model.keras")
+CHECKPOINT_EPOCH_PATH = os.path.join(CHECKPOINT_DIR, "epoch")
+
+class SaveEpochCallback(keras.callbacks.Callback):
+    def __init__(self, file_path: str):
+        super().__init__()
+        self.file_path = file_path
+
+    def on_epoch_end(self, epoch: int, logs=None):
+        with open(self.file_path, "w") as state_file:
+            # Using `epoch + 1`, because this will be the initial epoch on the resumed run 
+            state_file.write(str(epoch + 1))
 
 class F1FromSeqLogits(keras.metrics.F1Score):
     def update_state(self, y_true, y_pred, **kwargs):
@@ -41,6 +56,22 @@ def get_common_metrics():
         keras.metrics.Precision(0, name="precision"),
         keras.metrics.Recall(0, name="recall")
     ]
+
+def get_common_callbacks(live):
+    return [
+        DVCLiveCallback(live=live),
+        tf.keras.callbacks.ModelCheckpoint(CHECKPOINT_MODEL_PATH),
+        SaveEpochCallback(CHECKPOINT_EPOCH_PATH)
+    ]
+
+def restore_checkpoint_model():
+    if os.path.exists(CHECKPOINT_EPOCH_PATH):
+        with open(CHECKPOINT_EPOCH_PATH, "r") as state_file:
+            initial_epoch = int(state_file.readline())
+        if os.path.exists(CHECKPOINT_MODEL_PATH):
+            model = keras.models.load_model(CHECKPOINT_MODEL_PATH)
+            return model, initial_epoch
+    return None, 0
 
 def find_lr(build_model, x, y=None, early_stopping=True):
     print("Searching for best learning rate...")

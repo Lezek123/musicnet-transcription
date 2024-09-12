@@ -1,6 +1,7 @@
 from musicnet.models.utils import (
     calc_positive_class_weight,
     get_common_metrics,
+    get_common_callbacks,
     WeightedBinaryCrossentropy
 )
 import tensorflow as tf
@@ -11,7 +12,6 @@ from musicnet.models.transformer.Transformer import (
     EncoderOnlyAudioTransformer,
 )
 from dvclive import Live
-from dvclive.keras import DVCLiveCallback
 from musicnet.config.model import TransformerConfig, TransformerArchitecture
 
 def train(train_ds: tf.data.Dataset, val_ds: tf.data.Dataset, config: TransformerConfig, live: Live, model_path: str):
@@ -56,7 +56,7 @@ def train(train_ds: tf.data.Dataset, val_ds: tf.data.Dataset, config: Transforme
         train_ds,
         epochs=config.epochs,
         validation_data=val_ds,
-        callbacks=[DVCLiveCallback(live=live)],
+        callbacks=get_common_callbacks(live),
     )
     model.save(model_path)
     live.log_artifact(model_path)

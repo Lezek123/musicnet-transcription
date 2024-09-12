@@ -4,10 +4,11 @@ from musicnet.models.utils import (
     WeightedBinaryCrossentropy,
     calc_positive_class_weight,
     find_lr,
-    get_common_metrics
+    get_common_metrics,
+    get_common_callbacks,
+    restore_checkpoint_model
 )
 from dvclive import Live
-from dvclive.keras import DVCLiveCallback
 from musicnet.config.model.CNNConfig import CNNConfig, ConvType
 from musicnet.config.model.common import LRDerivation
 
@@ -72,24 +73,29 @@ def train(train_ds: tf.data.Dataset, val_ds: tf.data.Dataset, config: CNNConfig,
             optimizer=optimizer,
             **kwargs
         )
-        return model  
-
-    metrics = get_common_metrics()
-    if config.lr == LRDerivation.AUTO:
-        model, best_lr, init_epoch = find_lr(build_model, train_ds)
-        model.compile(optimizer=keras.optimizers.Adam(best_lr), loss=loss, metrics=metrics)
-        live.log_param("lr", best_lr)
-    else:
-        model = build_model(optimizer=keras.optimizers.Adam(config.lr), metrics=metrics)
-        init_epoch = 0
-        live.log_param("lr", config.lr)
+        return model
+    
+    model, init_epoch = restore_checkpoint_model()
+    if model is None:
+        # No checkpoint model found: build a clean model instance
+        metrics = get_common_metrics()
+        if config.lr == LRDerivation.AUTO:
+            model, best_lr, init_epoch = find_lr(build_model, train_ds)
+            for _ in range(init_epoch):
+                live.next_step()
+            model.compile(optimizer=keras.optimizers.Adam(best_lr), loss=loss, metrics=metrics)
+            live.log_param("lr", best_lr)
+        else:
+            model = build_model(optimizer=keras.optimizers.Adam(config.lr), metrics=metrics)
+            init_epoch = 0
+            live.log_param("lr", config.lr)
     
     model.fit(
         train_ds,
         epochs=config.epochs,
         initial_epoch=init_epoch,
         validation_data=val_ds,
-        callbacks=[DVCLiveCallback(live=live)],
+        callbacks=get_common_callbacks(live),
     )
 
     model.save(model_path)

@@ -5,7 +5,7 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 from dvclive import Live
 from tensorflow import keras
-from musicnet.config import to_config_object, Config
+from musicnet.config import Config
 from musicnet.preprocessing.wav_chunks_tfrecord.utils import create_tf_record_ds
 from musicnet.preprocessing.utils import get_datasets_info, load_vocabs
 from musicnet.preprocessing.dataset.base import DsName
@@ -215,8 +215,7 @@ class PlotsLogger:
         sns.barplot(counts, x="value", y="note", hue="metric", orient="y", ax=plt.gca())
         self.live.log_image(f"{self.ds_name}/tp_fp_fn_by_note_plot.png", fig)
 
-def eval(cfg: Config, live: Live) -> None:
-    config = to_config_object(cfg)
+def eval(config: Config, live: Live) -> None:
     ds_infos = get_datasets_info(config)
 
     datasets: dict[DsName, tf.data.Dataset] = {}

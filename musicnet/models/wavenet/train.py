@@ -2,14 +2,14 @@ from musicnet.models.utils import (
     WeightedBinaryCrossentropy,
     calc_positive_class_weight,
     find_lr,
-    get_common_metrics
+    get_common_metrics,
+    get_common_callbacks
 )
 from musicnet.config.model.WaveNetConfig import WaveNetConfig
 from musicnet.config.model.common import LRDerivation
 import tensorflow as tf
 import keras
 from dvclive import Live
-from dvclive.keras import DVCLiveCallback
 import numpy as np
 
 def train(train_ds: tf.data.Dataset, val_ds: tf.data.Dataset, config: WaveNetConfig, live: Live, model_path: str):
@@ -68,7 +68,7 @@ def train(train_ds: tf.data.Dataset, val_ds: tf.data.Dataset, config: WaveNetCon
         epochs=config.epochs,
         initial_epoch=init_epoch,
         validation_data=val_ds,
-        callbacks=[DVCLiveCallback(live=live)],
+        callbacks=get_common_callbacks(live),
     )
 
     model.save(model_path)

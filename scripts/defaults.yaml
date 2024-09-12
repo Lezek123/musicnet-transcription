@@ -5,6 +5,8 @@ defaults:
   - override dataset/default/wav_source: synth_midi_to_wav
   - _self_
 
+# Always resume from previous state, since the cloud instance may often get rebooted
+resume: True
 dataset:
   default:
     preprocessor:
