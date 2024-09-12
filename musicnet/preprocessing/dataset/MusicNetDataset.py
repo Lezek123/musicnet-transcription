@@ -1,4 +1,3 @@
-from musicnet.utils import PROJECT_ROOT_DIR, IS_CLOUD
 from musicnet.config.dataset.wav_source.common import MnDatasetType
 from .base import BaseDataset, BaseTrack
 from dataclasses import dataclass

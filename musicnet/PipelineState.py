@@ -1,8 +1,8 @@
 import os
 import pickle
 from omegaconf import OmegaConf
-from musicnet.utils import PROJECT_ROOT_DIR, recreate_dirs
-from musicnet.config.Config import Config, Stage, to_config_object
+from musicnet.utils import PROJECT_ROOT_DIR, IS_CLOUD, recreate_dirs
+from musicnet.config.Config import Config, Stage
 from enum import Enum
 from dataclasses import dataclass
 
@@ -10,7 +10,10 @@ class StageState(Enum):
     CLEAN = 0
     IN_PROGRESS = 1
 
-STATE_DIR = os.path.join(PROJECT_ROOT_DIR, "state")
+if IS_CLOUD:
+    STATE_DIR = "/gcs/musicnet-job-data/state"
+else:    
+    STATE_DIR = os.path.join(PROJECT_ROOT_DIR, "state")
 
 @dataclass
 class StoredPipelineState():

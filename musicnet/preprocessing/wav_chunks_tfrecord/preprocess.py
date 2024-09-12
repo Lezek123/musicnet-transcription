@@ -36,7 +36,7 @@ class ChunkIterator:
         preprocessor: Preprocessor,
         track_ids: list[int],
         start_chunk: Optional[int] = None,
-        preload_tracks_n = 8
+        preload_tracks_n = 4
     ):
         self.dataset = dataset
         self.preprocessor = preprocessor

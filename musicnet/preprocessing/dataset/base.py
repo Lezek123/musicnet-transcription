@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from musicnet.utils import PROJECT_ROOT_DIR
+from musicnet.utils import PROJECT_ROOT_DIR, IS_CLOUD
 from musicnet.config.dataset.DatasetConfig import DsConfig, DsConfigOverrides
 from glob import glob
 from typing import Optional, Literal, TypeAlias
@@ -9,8 +9,14 @@ import numpy as np
 import librosa
 import os
 
-DATA_SOURCES_PATH = os.path.join(PROJECT_ROOT_DIR, "data", "sources")
-PREPROCESSED_DATA_PATH = os.path.join(PROJECT_ROOT_DIR, "data", "preprocessed")
+if IS_CLOUD:
+    DATA_PATH = "/gcs/musicnet-job-data/data"
+else:
+    DATA_PATH = os.path.join(PROJECT_ROOT_DIR, "data")
+    
+
+DATA_SOURCES_PATH = os.path.join(DATA_PATH, "sources")
+PREPROCESSED_DATA_PATH = os.path.join(DATA_PATH, "preprocessed")
 
 DsName: TypeAlias = Literal["train", "val", "test"]
 

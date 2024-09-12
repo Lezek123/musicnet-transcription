@@ -2,7 +2,7 @@ import hydra
 import os
 import typing
 from omegaconf import OmegaConf
-from musicnet.utils import PROJECT_ROOT_DIR
+from musicnet.utils import PROJECT_ROOT_DIR, IS_CLOUD
 from musicnet.config.Config import Config, Stage, to_config_object
 from musicnet.preprocessing.generate import generate
 from musicnet.preprocessing.preprocess import preprocess
@@ -10,6 +10,11 @@ from musicnet.models.train import train
 from dvclive import Live
 from musicnet.models.eval import eval
 from musicnet.PipelineState import PipelineState, StageState
+
+if IS_CLOUD:
+    DVCLIVE_DIR = "/gcs/musicnet-job-data/dvclive"
+else:
+    DVCLIVE_DIR = os.path.join(PROJECT_ROOT_DIR, "dvclive")
 
 @hydra.main(version_base=None, config_name="config")
 def main(cfg: Config) -> None:
@@ -27,7 +32,7 @@ def main(cfg: Config) -> None:
         print("Resuming from previous point in DVCLive...")
 
     with Live(
-        dir=os.path.join(PROJECT_ROOT_DIR, "dvclive" if cfg.exp else "tmp"),
+        dir=DVCLIVE_DIR if cfg.exp else os.path.join(PROJECT_ROOT_DIR, "tmp"),
         save_dvc_exp=cfg.exp,
         dvcyaml=os.path.join(PROJECT_ROOT_DIR, "dvc.yaml") if cfg.exp else None,
         resume=resume_dvclive
