@@ -8,11 +8,11 @@ from tqdm import tqdm
 from dvclive.keras import DVCLiveCallback
 from musicnet.utils import IS_CLOUD
 
-MODEL_PATH = str(Path(__file__).with_name("model.keras"))
-
 if IS_CLOUD:
+    MODEL_PATH = "/gcs/musicnet-job-data/model.keras"
     CHECKPOINT_DIR = "/gcs/musicnet-job-data/model-checkpoint"
 else:
+    MODEL_PATH = str(Path(__file__).with_name("model.keras"))
     CHECKPOINT_DIR = str(Path(__file__).with_name("checkpoint"))
 
 CHECKPOINT_MODEL_PATH = os.path.join(CHECKPOINT_DIR, "model.keras")
